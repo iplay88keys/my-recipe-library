@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+root_dir="$(git rev-parse --show-toplevel)"
+
 docker info > /dev/null 2>&1
 exit_code=$?
 if [[ "${exit_code}" -ne 0 ]]; then
@@ -10,9 +12,9 @@ fi
 set -e
 
 echo "Stopping the database if currently running"
-./scripts/stop_database.sh
+"${root_dir}/scripts/stop_database.sh"
 
-pushd db
+pushd "${root_dir}/db"
     echo "Bringing up the new database"
     docker-compose up & > /dev/null 2>&1
 popd

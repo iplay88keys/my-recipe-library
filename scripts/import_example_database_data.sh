@@ -2,7 +2,9 @@
 
 set -e
 
-. ./scripts/dev_db_creds.sh
+root_dir="$(git rev-parse --show-toplevel)"
+
+source "${root_dir}/scripts/dev_db_creds.sh"
 
 pushd migrations
     echo "Importing example data into the database"

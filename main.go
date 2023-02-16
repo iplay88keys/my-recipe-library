@@ -1,181 +1,193 @@
 package main
 
 import (
-    "database/sql"
-    "fmt"
-    "os"
-    "os/signal"
-    "strconv"
-    "strings"
-    "syscall"
-    "time"
+	"database/sql"
+	"fmt"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
-    "code.cloudfoundry.org/go-envstruct"
-    "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/mysql"
-    "github.com/go-redis/redis"
+	"cloud.google.com/go/cloudsqlconn/mysql/mysql"
+	"code.cloudfoundry.org/go-envstruct"
+	"github.com/go-redis/redis"
 
-    "github.com/iplay88keys/my-recipe-library/pkg/api"
-    "github.com/iplay88keys/my-recipe-library/pkg/api/recipes"
-    "github.com/iplay88keys/my-recipe-library/pkg/api/users"
-    "github.com/iplay88keys/my-recipe-library/pkg/config"
-    "github.com/iplay88keys/my-recipe-library/pkg/repositories"
-    "github.com/iplay88keys/my-recipe-library/pkg/token"
+	"github.com/iplay88keys/my-recipe-library/pkg/api"
+	"github.com/iplay88keys/my-recipe-library/pkg/api/recipes"
+	"github.com/iplay88keys/my-recipe-library/pkg/api/users"
+	"github.com/iplay88keys/my-recipe-library/pkg/config"
+	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/token"
 
-    _ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
-    cfg := config.Config{
-        Port:   "8080",
-        Static: "ui/build",
-    }
+	cfg := config.Config{
+		Port:   "8080",
+		Static: "ui/build",
+	}
 
-    err := envstruct.Load(&cfg)
-    if err != nil {
-        panic(err)
-    }
+	err := envstruct.Load(&cfg)
+	if err != nil {
+		panic(err)
+	}
 
-    db, err := connectToMySQL(&config.MySQLCreds{})
-    if err != nil {
-        panic(err)
-    }
+	db, disconnectMySQL, err := connectToMySQL(cfg.MySQLCreds)
+	if err != nil {
+		panic(err)
+	}
+	defer disconnectMySQL()
 
-    redisClient, err := connectToRedis(cfg.RedisURL)
-    if err != nil {
-        panic(err)
-    }
+	redisClient, err := connectToRedis(cfg.RedisURL)
+	if err != nil {
+		panic(err)
+	}
+	defer disconnectFromRedis(redisClient)
 
-    recipesRepo := repositories.NewRecipesRepository(db)
-    ingredientsRepo := repositories.NewIngredientsRepository(db)
-    stepsRepo := repositories.NewStepsRepository(db)
-    usersRepo := repositories.NewUsersRepository(db)
+	recipesRepo := repositories.NewRecipesRepository(db)
+	ingredientsRepo := repositories.NewIngredientsRepository(db)
+	stepsRepo := repositories.NewStepsRepository(db)
+	usersRepo := repositories.NewUsersRepository(db)
 
-    redisRepo := repositories.NewRedisRepository(redisClient)
-    tokenService := token.NewService(cfg.AccessSecret, cfg.RefreshSecret)
+	redisRepo := repositories.NewRedisRepository(redisClient)
+	tokenService := token.NewService(cfg.AccessSecret, cfg.RefreshSecret)
 
-    a := api.New(&api.Config{
-        Port:                  cfg.Port,
-        StaticDir:             cfg.Static,
-        Validate:              tokenService.ValidateToken,
-        RetrieveAccessDetails: redisRepo.RetrieveTokenDetails,
-        Endpoints: []*api.Endpoint{
-            recipes.CreateRecipe(recipesRepo.Insert),
-            recipes.ListRecipes(recipesRepo.List),
-            recipes.GetRecipe(
-                recipesRepo.Get,
-                ingredientsRepo.GetForRecipe,
-                stepsRepo.GetForRecipe,
-            ),
-            users.Register(
-                usersRepo.ExistsByUsername,
-                usersRepo.ExistsByEmail,
-                usersRepo.Insert,
-            ),
-            users.Login(
-                usersRepo.Verify,
-                tokenService.CreateToken,
-                redisRepo.StoreTokenDetails,
-            ),
-            users.Logout(
-                tokenService.ValidateToken,
-                redisRepo.DeleteTokenDetails,
-            ),
-        },
-    })
+	a := api.New(&api.Config{
+		Port:                  cfg.Port,
+		StaticDir:             cfg.Static,
+		Validate:              tokenService.ValidateToken,
+		RetrieveAccessDetails: redisRepo.RetrieveTokenDetails,
+		Endpoints: []*api.Endpoint{
+			recipes.CreateRecipe(recipesRepo.Insert),
+			recipes.ListRecipes(recipesRepo.List),
+			recipes.GetRecipe(
+				recipesRepo.Get,
+				ingredientsRepo.GetForRecipe,
+				stepsRepo.GetForRecipe,
+			),
+			users.Register(
+				usersRepo.ExistsByUsername,
+				usersRepo.ExistsByEmail,
+				usersRepo.Insert,
+			),
+			users.Login(
+				usersRepo.Verify,
+				tokenService.CreateToken,
+				redisRepo.StoreTokenDetails,
+			),
+			users.Logout(
+				tokenService.ValidateToken,
+				redisRepo.DeleteTokenDetails,
+			),
+		},
+	})
 
-    fmt.Printf("Serving at http://localhost:%s\n", cfg.Port)
-    stopApi := a.Start()
+	fmt.Printf("Serving at http://localhost:%s\n", cfg.Port)
+	stopApi := a.Start()
+	defer stopApi()
 
-    defer stopApi()
-    defer disconnectFromMySQL(db)
-    defer disconnectFromRedis(redisClient)
-
-    blockUntilSigterm()
+	blockUntilSigterm()
 }
 
-func connectToMySQL(config *config.MySQLCreds) (db *sql.DB, err error) {
-    if config.URL != "" {
-        var unquotedURL string
-        url := config.URL
+func connectToMySQL(config config.MySQLCreds) (db *sql.DB, disconnect func(), err error) {
+	if config.URL != "" {
+		var unquotedURL string
+		url := config.URL
 
-        unquotedURL, err = strconv.Unquote(url)
-        if err == nil {
-            url = unquotedURL
-        }
+		unquotedURL, err = strconv.Unquote(url)
+		if err == nil {
+			url = unquotedURL
+		}
 
-        db, err = sql.Open("mysql", strings.TrimSpace(strings.TrimPrefix(url, "mysql://")))
-        if err != nil {
-            return nil, err
-        }
+		db, err = sql.Open("mysql", strings.TrimSpace(strings.TrimPrefix(url, "mysql://")))
+		if err != nil {
+			return nil, nil, err
+		}
+		disconnect = func() {
+			disconnectFromMySQL(db)
+		}
+	} else {
+		cleanup, err := mysql.RegisterDriver(
+			"cloudsql-mysql",
+		)
+		if err != nil {
+			return nil, nil, err
+		}
 
-    } else {
-        cfg := mysql.Cfg(config.InstanceName, config.User, config.Password)
-        cfg.DBName = config.DBName
+		db, err = sql.Open(
+			"cloudsql-mysql",
+			fmt.Sprintf("%s:%s@cloudsql-mysql(%s)/%s", config.User, config.Password, config.InstanceName, config.DBName),
+		)
+		if err != nil {
+			return nil, nil, err
+		}
 
-        db, err = mysql.DialCfg(cfg)
-        if err != nil {
-            return nil, err
-        }
-    }
+		disconnect = func() {
+			cleanup()
+		}
+	}
 
-    err = db.Ping()
-    if err != nil {
-        return nil, err
-    }
+	err = db.Ping()
+	if err != nil {
+		return nil, nil, err
+	}
 
-    return db, nil
+	return db, disconnect, nil
 }
 
 func connectToRedis(redisURL string) (redis.Cmdable, error) {
-    options, err := redis.ParseURL(redisURL)
-    if err != nil {
-        return nil, err
-    }
+	options, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, err
+	}
 
-    redisClient := redis.NewClient(options)
+	redisClient := redis.NewClient(options)
 
-    _, err = redisClient.Ping().Result()
-    if err != nil {
-        return nil, err
-    }
+	_, err = redisClient.Ping().Result()
+	if err != nil {
+		return nil, err
+	}
 
-    return redisClient, nil
+	return redisClient, nil
 }
 
 func disconnectFromMySQL(db *sql.DB) {
-    var stats sql.DBStats
-    stats = db.Stats()
+	var stats sql.DBStats
+	stats = db.Stats()
 
-    var maxCount int
-    for stats.InUse != 0 {
-        if maxCount == 10 {
-            break
-        }
+	var maxCount int
+	for stats.InUse != 0 {
+		if maxCount == 10 {
+			break
+		}
 
-        stats = db.Stats()
+		stats = db.Stats()
 
-        fmt.Printf("Waiting on open mySQL connections: %d in use\n", stats.InUse)
+		fmt.Printf("Waiting on open mySQL connections: %d in use\n", stats.InUse)
 
-        maxCount += 1
-        time.Sleep(100 * time.Millisecond)
-    }
+		maxCount += 1
+		time.Sleep(100 * time.Millisecond)
+	}
 
-    err := db.Close()
-    if err != nil {
-        panic(err)
-    }
+	err := db.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func disconnectFromRedis(client redis.Cmdable) {
-    err := client.(*redis.Client).Close()
-    if err != nil {
-        panic(err)
-    }
+	err := client.(*redis.Client).Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func blockUntilSigterm() {
-    sigs := make(chan os.Signal, 1)
-    signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
-    <-sigs
+	<-sigs
 }

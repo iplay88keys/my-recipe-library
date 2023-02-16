@@ -1,47 +1,47 @@
 package repositories
 
 import (
-    "database/sql"
-    "errors"
-    "fmt"
+	"database/sql"
+	"errors"
+	"fmt"
 )
 
 type Ingredient struct {
-    Ingredient       *string `json:"ingredient"`
-    IngredientNumber *int    `json:"ingredient_number"`
-    Amount           *string `json:"amount"`
-    Measurement      *string `json:"measurement"`
-    Preparation      *string `json:"preparation"`
+	Ingredient       *string `json:"ingredient"`
+	IngredientNumber *int    `json:"ingredient_number"`
+	Amount           *string `json:"amount"`
+	Measurement      *string `json:"measurement"`
+	Preparation      *string `json:"preparation"`
 }
 
 type IngredientsRepository struct {
-    db *sql.DB
+	db *sql.DB
 }
 
 func NewIngredientsRepository(db *sql.DB) *IngredientsRepository {
-    return &IngredientsRepository{db: db}
+	return &IngredientsRepository{db: db}
 }
 
 func (r *IngredientsRepository) GetForRecipe(recipeID int64) ([]*Ingredient, error) {
-    rows, err := r.db.Query(getIngredientsForRecipeQuery, recipeID)
-    if err != nil {
-        return nil, errors.New(fmt.Sprintf("failed to fetch recipe ingredients: %s", err.Error()))
-    }
-    defer rows.Close()
+	rows, err := r.db.Query(getIngredientsForRecipeQuery, recipeID)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to fetch recipe ingredients: %s", err.Error()))
+	}
+	defer rows.Close()
 
-    var recipeIngredients []*Ingredient
-    for rows.Next() {
-        r := &Ingredient{}
-        if err := rows.Scan(&r.Ingredient, &r.IngredientNumber, &r.Amount, &r.Measurement, &r.Preparation); err != nil {
-            return nil, errors.New(fmt.Sprintf("failed to scan recipe ingredients: %s", err.Error()))
-        }
-        recipeIngredients = append(recipeIngredients, r)
-    }
-    if rows.Err() != nil {
-        return nil, errors.New(fmt.Sprintf("failed to loop through recipe ingredients: %s", rows.Err()))
-    }
+	var recipeIngredients []*Ingredient
+	for rows.Next() {
+		r := &Ingredient{}
+		if err := rows.Scan(&r.Ingredient, &r.IngredientNumber, &r.Amount, &r.Measurement, &r.Preparation); err != nil {
+			return nil, errors.New(fmt.Sprintf("failed to scan recipe ingredients: %s", err.Error()))
+		}
+		recipeIngredients = append(recipeIngredients, r)
+	}
+	if rows.Err() != nil {
+		return nil, errors.New(fmt.Sprintf("failed to loop through recipe ingredients: %s", rows.Err()))
+	}
 
-    return recipeIngredients, nil
+	return recipeIngredients, nil
 }
 
 const getIngredientsForRecipeQuery = `

@@ -2,7 +2,9 @@
 
 set -e
 
-. ./scripts/dev_db_creds.sh
+root_dir="$(git rev-parse --show-toplevel)"
+
+source "${root_dir}/scripts/dev_db_creds.sh"
 
 skipUI=false
 skipIntegration=false
@@ -32,7 +34,7 @@ while test $# -gt 0; do
 done
 
 if [[ "${skipUI}" = "false" ]]; then
-    pushd ui
+    pushd "${root_dir}/ui"
         echo "Running 'yarn test'"
         yarn test --watchAll=false
 
@@ -55,17 +57,17 @@ if [[ "${skipIntegration}" = "false" ]]; then
 
     if [[ "${exit_code}" -eq 1 ]]; then
         echo "mysql is not running, starting it for testing"
-        ./scripts/start_database.sh > /dev/null 2>&1
+        "${root_dir}/scripts/start_database.sh" > /dev/null 2>&1
 
         function finish {
-          ./scripts/stop_database.sh > /dev/null 2>&1
+          "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
         }
         trap finish EXIT
     else
-        ./scripts/clean_database.sh
+        "${root_dir}/scripts/clean_database.sh"
     fi
 
-    ./scripts/migrate_database.sh
+    "${root_dir}/scripts/migrate_database.sh"
 fi
 
 
@@ -76,10 +78,10 @@ export REFRESH_SECRET="refresh_secret"
 
 if [[ "${skipBackend}" = "false" ]]; then
     echo "Running ginkgo for everything except integration"
-    ginkgo -r -p -skipPackage pkg/integration
+    ginkgo -r -p -skip-package pkg/integration --output-interceptor-mode=none
 fi
 
 if [[ "${skipIntegration}" = "false" ]]; then
     echo "Running ginkgo for integration"
-    ginkgo -r pkg/integration
+    ginkgo -r pkg/integration --output-interceptor-mode=none
 fi

@@ -1,17 +1,17 @@
 package helpers
 
 func Int64Pointer(v int64) *int64 {
-    return &v
+	return &v
 }
 
 func IntPointer(v int) *int {
-    return &v
+	return &v
 }
 
 func StringPointer(v string) *string {
-    if v == "" {
-        return nil
-    }
+	if v == "" {
+		return nil
+	}
 
-    return &v
+	return &v
 }

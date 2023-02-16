@@ -12,11 +12,17 @@ Built with:
 # Local Development
 ## Requirements
 * Docker
-* Go 1.12+
+* Go 1.19+
+* Node
+* Yarn
+* React
+* Mysql
+* Flyway
 
 ## Running
 ```bash
 go mod download
+yarn --cwd "ui" install
 
 ./scripts/run.sh
 ```
