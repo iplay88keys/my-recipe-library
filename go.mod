@@ -5,7 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/cloudsqlconn v1.2.0
 	code.cloudfoundry.org/go-envstruct v1.5.0
-	github.com/DATA-DOG/go-sqlmock v1.4.1
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elliotchance/redismock v1.5.3
