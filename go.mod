@@ -3,7 +3,7 @@ module github.com/iplay88keys/my-recipe-library
 go 1.19
 
 require (
-	cloud.google.com/go/cloudsqlconn v1.2.0
+	cloud.google.com/go/cloudsqlconn v1.2.1
 	code.cloudfoundry.org/go-envstruct v1.5.0
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/alicebob/miniredis v2.5.0+incompatible
