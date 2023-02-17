@@ -4,10 +4,10 @@ import { Provider } from "react-redux";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import * as serviceWorker from "./serviceWorker";
-import configureStore from "./state/store";
+import setupStore from "./state/store";
 import App from "./views/App";
 
-let store = configureStore();
+const store = setupStore();
 
 ReactDOM.render(
     <Provider store={store}>

@@ -1,6 +1,5 @@
 import React from "react";
 import { connect } from "react-redux";
-import { ApplicationState } from "../../state/ducks";
 import { loginAsync, logout } from "../../state/ducks/users/actions";
 import Login from "../components/Login";
 
@@ -29,7 +28,7 @@ class LoginPage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = (_: ApplicationState) => ({});
+const mapStateToProps = () => ({});
 
 const mapDispatchToProps = {
     login: loginAsync.request,

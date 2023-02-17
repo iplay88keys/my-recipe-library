@@ -1,6 +1,5 @@
 import React from "react";
 import { connect } from "react-redux";
-import { ApplicationState } from "../../state/ducks";
 import { createRecipeAsync } from "../../state/ducks/recipes/actions";
 import NewRecipe from "../components/NewRecipe";
 
@@ -22,7 +21,7 @@ class NewRecipePage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = (_: ApplicationState) => ({});
+const mapStateToProps = () => ({});
 
 const mapDispatchToProps = {
     create: createRecipeAsync.request

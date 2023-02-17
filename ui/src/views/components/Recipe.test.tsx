@@ -1,10 +1,8 @@
+import { render, screen, within } from '@testing-library/react'
 import React from "react";
-import Enzyme, { shallow } from "enzyme";
-import Adapter from "enzyme-adapter-react-16";
+import { BrowserRouter } from "react-router-dom";
 import { Ingredient, RecipeResponse, Step } from "../../state/ducks/recipes/types";
 import { Recipe } from "./Recipe";
-
-Enzyme.configure({adapter: new Adapter()});
 
 describe("Recipe", () => {
     it("should render a single recipe", () => {
@@ -15,9 +13,9 @@ describe("Recipe", () => {
             creator: "User1",
             servings: 1,
             prep_time: "5 m",
-            cook_time: "0 m",
-            cool_time: "0 m",
-            total_time: "5 m",
+            cook_time: "7 m",
+            cool_time: "2 m",
+            total_time: "14 m",
             source: "some-site",
             ingredients: [{
                 ingredient: "Vanilla Ice Cream",
@@ -38,34 +36,59 @@ describe("Recipe", () => {
             }] as Step[]
         } as RecipeResponse;
 
-        const enzymeWrapper = shallow(
-            <Recipe
-                recipe={recipe}
-                loading={false}
-            />
+        render(
+            <BrowserRouter>
+                <Recipe
+                    recipe={recipe}
+                    loading={false}
+                />
+            </BrowserRouter>
         );
 
-        expect(enzymeWrapper.find("StyledRecipeBreadcrumbs").text()).toEqual("Recipes / Cookbook / Section");
-        expect(enzymeWrapper.find("StyledRecipeName").text()).toEqual("Root Beer Float");
-        expect(enzymeWrapper.find("StyledRecipe").childAt(2).text()).toEqual("Delicious");
-        expect(enzymeWrapper.find("StyledRecipe").childAt(3).text()).toEqual("Source: some-site");
+        const recipesLink = screen.getByRole('link', {name: /recipes/i})
+        expect(recipesLink).toHaveTextContent("Recipes");
+        expect(recipesLink).toHaveAttribute("href", "/recipes");
 
-        expect(enzymeWrapper.find("StyledRecipeTiming").children()).toHaveLength(4);
-        expect(enzymeWrapper.find("StyledRecipeTiming").childAt(0).text()).toEqual("Prep: 5 m");
-        expect(enzymeWrapper.find("StyledRecipeTiming").childAt(1).text()).toEqual("Cook: 0 m");
-        expect(enzymeWrapper.find("StyledRecipeTiming").childAt(2).text()).toEqual("Cool: 0 m");
-        expect(enzymeWrapper.find("StyledRecipeTiming").childAt(3).text()).toEqual("Total: 5 m");
+        const cookbookLink = screen.getByRole('link', {name: /cookbook/i})
+        expect(cookbookLink).toHaveTextContent("Cookbook");
+        expect(cookbookLink).toHaveAttribute("href", "/#cookbook");
 
-        expect(enzymeWrapper.find("StyledRecipeIngredients").children()).toHaveLength(2);
-        expect(enzymeWrapper.find("StyledRecipeIngredients").childAt(0).text())
-            .toEqual("1 Scoop Vanilla Ice Cream, Frozen");
-        expect(enzymeWrapper.find("StyledRecipeIngredients").childAt(1).text()).toEqual("Root Beer");
+        const sectionLink = screen.getByRole('link', {name: /section/i})
+        expect(sectionLink).toHaveTextContent("Section");
+        expect(sectionLink).toHaveAttribute("href", "/#section");
 
-        expect(enzymeWrapper.find("StyledRecipeSteps ol").children()).toHaveLength(2);
-        expect(enzymeWrapper.find("StyledRecipeSteps ol").childAt(0).text()).toEqual("Place ice cream in glass.");
-        expect(enzymeWrapper.find("StyledRecipeSteps ol").childAt(1).text()).toEqual("Top with Root Beer.");
+        expect(screen.getByText(/root beer float/i)).toBeInTheDocument();
+        expect(screen.getByText(/delicious/i)).toBeInTheDocument();
+        expect(screen.getByText(/source: some-site/i)).toBeInTheDocument();
 
-        expect(enzymeWrapper.find("StyledRecipeServings").text()).toEqual("1 Serving");
+        const ingredients = screen.getAllByTestId("ingredients");
+        const ingredientItems = ingredients.map((ingredientList) =>
+            within(ingredientList).getAllByRole("listitem").map((ingredient) =>
+                ingredient.textContent
+            )
+        ).flat();
+        expect(ingredientItems).toEqual([
+            "1 Scoop Vanilla Ice Cream, Frozen",
+            "Root Beer"
+        ])
+
+        expect(screen.getByText(/prep: 5 m/i)).toBeInTheDocument()
+        expect(screen.getByText(/cook: 7 m/i)).toBeInTheDocument()
+        expect(screen.getByText(/cool: 2 m/i)).toBeInTheDocument()
+        expect(screen.getByText(/total: 14 m/i)).toBeInTheDocument()
+
+        const steps = screen.getAllByTestId("steps");
+        const stepItems = steps.map((stepList) =>
+            within(stepList).getAllByRole("listitem").map((step) =>
+                step.textContent
+            )
+        ).flat();
+        expect(stepItems).toEqual([
+            "Place ice cream in glass.",
+            "Top with Root Beer."
+        ])
+
+        expect(screen.getByText(/1 Serving/i)).toBeInTheDocument();
     });
 
     it("renders the source as a link if it contains 'http'", () => {
@@ -86,16 +109,16 @@ describe("Recipe", () => {
             }] as Ingredient[]
         } as RecipeResponse;
 
-        const enzymeWrapper = shallow(
-            <Recipe
-                recipe={recipe}
-                loading={false}
-            />
+        render(
+            <BrowserRouter>
+                <Recipe
+                    recipe={recipe}
+                    loading={false}
+                />
+            </BrowserRouter>
         );
 
-        expect(enzymeWrapper.find("StyledRecipe").childAt(3).text()).toEqual("Source: Link");
-        expect(enzymeWrapper.find("StyledRecipe").childAt(3).html())
-            .toEqual(`<p>Source: <a href="http://example.com">Link</a></p>`);
+        expect(screen.getByRole('link', {name: /link/i})).toHaveAttribute("href", "http://example.com");
     });
 
     it("renders multiple servings with an 's'", () => {
@@ -116,14 +139,16 @@ describe("Recipe", () => {
             }] as Ingredient[]
         } as RecipeResponse;
 
-        const enzymeWrapper = shallow(
-            <Recipe
-                recipe={recipe}
-                loading={false}
-            />
+        render(
+            <BrowserRouter>
+                <Recipe
+                    recipe={recipe}
+                    loading={false}
+                />
+            </BrowserRouter>
         );
 
-        expect(enzymeWrapper.find("StyledRecipeServings").text()).toEqual("3 Servings");
+        expect(screen.getByText(/3 Servings/i)).toBeInTheDocument();
     });
 
     it("does not render missing data", () => {
@@ -138,36 +163,37 @@ describe("Recipe", () => {
             }] as Ingredient[]
         } as RecipeResponse;
 
-        const enzymeWrapper = shallow(
-            <Recipe
-                recipe={recipe}
-                loading={false}
-            />
+        render(
+            <BrowserRouter>
+                <Recipe
+                    recipe={recipe}
+                    loading={false}
+                />
+            </BrowserRouter>
         );
 
-        expect(enzymeWrapper.find("StyledRecipe").childAt(2).text()).not.toContain("Delicious");
-        expect(enzymeWrapper.find("StyledRecipe").childAt(3).text()).not.toContain("Source: some-site");
+        expect(screen.queryByText(/delicious/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/source: some-site/i)).not.toBeInTheDocument();
 
-        expect(enzymeWrapper.find("StyledRecipeTiming").children()).toHaveLength(0);
-        expect(enzymeWrapper.find("StyledRecipeTiming").text()).not.toContain("Prep:");
-        expect(enzymeWrapper.find("StyledRecipeTiming").text()).not.toContain("Cook:");
-        expect(enzymeWrapper.find("StyledRecipeTiming").text()).not.toContain("Cool:");
-        expect(enzymeWrapper.find("StyledRecipeTiming").text()).not.toContain("Total:");
+
+        expect(screen.queryByText(/prep:/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/cook:/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/cool:/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/total:/i)).not.toBeInTheDocument()
     });
 
     it("should render loading info when loading", () => {
-        const props = {
-            recipe: {} as RecipeResponse
-        };
+        const recipe = {} as RecipeResponse;
 
-        const enzymeWrapper = shallow(
-            <Recipe
-                recipe={props.recipe}
-                loading={true}
-            />
+        render(
+            <BrowserRouter>
+                <Recipe
+                    recipe={recipe}
+                    loading={true}
+                />
+            </BrowserRouter>
         );
 
-        expect(enzymeWrapper.find("div")).toHaveLength(1);
-        expect(enzymeWrapper.find("div p").text()).toBe("Loading recipe");
+        expect(screen.getByText("Loading recipe")).toBeInTheDocument();
     });
 });

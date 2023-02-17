@@ -31,7 +31,7 @@ class RecipePage extends React.Component<AllProps, State> {
         fetchRecipe(+this.props.match.params.recipeID);
     }
 
-    componentWillReceiveProps(nextProps: AllProps) {
+    UNSAFE_componentWillReceiveProps(nextProps: AllProps) {
         if (this.props.match.params.recipeID !== nextProps.match.params.recipeID) {
             this.props.fetchRecipe(+nextProps.match.params.recipeID);
         }

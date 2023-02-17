@@ -1,58 +1,46 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { runSaga } from "redux-saga";
-import { PayloadAction } from "typesafe-actions";
-import { loginAsync, registerAsync } from "./actions";
+import { AxiosError, AxiosHeaders, AxiosResponse } from "axios";
+import { testSaga } from "redux-saga-test-plan";
+import { action } from "typesafe-actions";
+import Api from "../../../api/api";
+import { history } from "../../../helpers/history"
 import { loginSaga, registerSaga } from "./sagas";
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, UserActionTypes } from "./types";
+import { LoginRequest, LoginResponse, RegisterRequest, UserActionTypes } from "./types";
 
 describe.only("users", () => {
-    let mock: MockAdapter;
-
-    beforeEach(() => {
-        mock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        mock.restore();
-    });
-
     describe.only("registerSaga", () => {
-        it("dispatches the success action", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/register";
-
+        it("dispatches the success action", () => {
             const req = {
                 username: "some-user",
                 email: "test@example.com",
                 password: "password"
             } as RegisterRequest;
 
-            mock.onPost(url, req).reply(200);
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
-
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, registerSaga, registerAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.REGISTER_SUCCESS);
+            const saga = testSaga(registerSaga, action(UserActionTypes.REGISTER_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/register", JSON.stringify(req), false);
+            saga.next().put({type: UserActionTypes.REGISTER_SUCCESS});
+            saga.next().isDone();
 
             expect(mockSetErrors).not.toHaveBeenCalled();
+
+            expect(historyMock.push).toHaveBeenCalledWith("/login");
         });
 
-        it("calls the provided function with the error payload if there is one", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
+        it("calls the provided function with the error payload", () => {
+            const errors = {errors: "some-error"}
 
-            const url = "/api/v1/users/register";
-            const resp = {
-                errors: {
-                    first: "first error",
-                    second: "second error"
+            const axiosError = new AxiosError("some-error", "400", undefined, undefined, {
+                data: errors,
+                status: 400,
+                statusText: "some-error",
+                headers: {},
+                config: {
+                    headers: new AxiosHeaders(),
                 }
-            } as RegisterResponse;
+            })
 
             const req = {
                 username: "some-user",
@@ -60,25 +48,32 @@ describe.only("users", () => {
                 password: "password"
             } as RegisterRequest;
 
-            mock.onPost(url, req).reply(400, resp);
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
+            const saga = testSaga(registerSaga, action(UserActionTypes.REGISTER_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/register", JSON.stringify(req), false);
+            saga.throw(axiosError).put({type: UserActionTypes.REGISTER_FAILURE, payload: axiosError});
+            saga.next().isDone();
 
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, registerSaga, registerAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.REGISTER_FAILURE);
-
+            expect(mockSetErrors).toHaveBeenCalled();
             expect(mockSetErrors).toHaveBeenCalledTimes(1);
-            expect(mockSetErrors).toHaveBeenNthCalledWith(1, resp.errors);
+            expect(mockSetErrors).toHaveBeenNthCalledWith(1, errors.errors);
+
+            expect(historyMock.push).not.toHaveBeenCalled();
         });
 
-        it("returns an error if there is no payload and there is an error", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/register";
+        it("returns an error if there is no payload and there is an error", () => {
+            const axiosError = new AxiosError("some-error", "400", undefined, undefined, {
+                data: undefined,
+                status: 400,
+                statusText: "some-error",
+                headers: {},
+                config: {
+                    headers: new AxiosHeaders(),
+                }
+            })
 
             const req = {
                 username: "some-user",
@@ -86,155 +81,117 @@ describe.only("users", () => {
                 password: "password"
             } as RegisterRequest;
 
-            mock.onPost(url, req).reply(500);
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
-
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, registerSaga, registerAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.REGISTER_FAILURE);
+            const saga = testSaga(registerSaga, action(UserActionTypes.REGISTER_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/register", JSON.stringify(req), false);
+            saga.throw(axiosError).put({type: UserActionTypes.REGISTER_FAILURE, payload: axiosError});
+            saga.next().isDone();
 
             expect(mockSetErrors).not.toHaveBeenCalled();
-        });
 
-        it("returns an error if there is a network error", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/register";
-
-            const req = {
-                username: "some-user",
-                email: "test@example.com",
-                password: "password"
-            } as RegisterRequest;
-
-            mock.onPost(url, req).networkError();
-
-            const mockSetErrors = jest.fn();
-
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, registerSaga, registerAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.REGISTER_FAILURE);
-
-            expect(mockSetErrors).not.toHaveBeenCalled();
+            expect(historyMock.push).not.toHaveBeenCalled();
         });
     });
 
     describe.only("loginSaga", () => {
-        it("dispatches the success action", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/login";
-            const resp = {
+        it("dispatches the success action", () => {
+            const loginResp = {
                 access_token: "some-token",
                 refresh_token: "another-token",
                 errors: {}
             } as LoginResponse;
 
+            const axiosResponse = {
+                data: loginResp
+            } as AxiosResponse;
+
             const req = {
                 login: "some-user",
                 password: "password"
             } as LoginRequest;
 
-            mock.onPost(url, req).reply(200, resp);
+            jest.spyOn(Object.getPrototypeOf(window.localStorage), 'setItem')
+            // eslint-disable-next-line jest/unbound-method
+            Object.setPrototypeOf(window.localStorage.setItem, jest.fn())
+
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
+            const saga = testSaga(loginSaga, action(UserActionTypes.LOGIN_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/login", JSON.stringify(req), false);
+            saga.next(axiosResponse).put({type: UserActionTypes.LOGIN_SUCCESS});
+            saga.next().isDone();
 
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, loginSaga, loginAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.LOGIN_SUCCESS);
-
-            expect(mockSetErrors).not.toHaveBeenCalled();
+            expect(historyMock.push).toHaveBeenCalledWith("/recipes");
+            expect(window.localStorage.setItem).toHaveBeenCalledWith("access_token", loginResp.access_token)
         });
 
-        it("calls the provided function with the error payload if there is one", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
+        it("calls the provided function with the error payload", () => {
+            const errors = {errors: "some-error"}
 
-            const url = "/api/v1/users/login";
-            const resp = {
-                access_token: "",
-                refresh_token: "",
-                errors: {
-                    first: "first error",
-                    second: "second error"
+            const axiosError = new AxiosError("some-error", "400", undefined, undefined, {
+                data: errors,
+                status: 400,
+                statusText: "some-error",
+                headers: {},
+                config: {
+                    headers: new AxiosHeaders(),
                 }
-            } as LoginResponse;
+            })
 
             const req = {
                 login: "some-user",
                 password: "password"
             } as LoginRequest;
 
-            mock.onPost(url, req).reply(400, resp);
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
+            const saga = testSaga(loginSaga, action(UserActionTypes.LOGIN_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/login", JSON.stringify(req), false);
+            saga.throw(axiosError).put({type: UserActionTypes.LOGIN_FAILURE, payload: axiosError});
+            saga.next().isDone();
 
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, loginSaga, loginAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.LOGIN_FAILURE);
-
+            expect(mockSetErrors).toHaveBeenCalled();
             expect(mockSetErrors).toHaveBeenCalledTimes(1);
-            expect(mockSetErrors).toHaveBeenNthCalledWith(1, resp.errors);
+            expect(mockSetErrors).toHaveBeenNthCalledWith(1, errors.errors);
+
+            expect(historyMock.push).not.toHaveBeenCalled();
         });
 
-        it("returns an error if there is no payload and there is an error", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/login";
+        it("returns an error if there is no payload and there is an error", () => {
+            const axiosError = new AxiosError("some-error", "400", undefined, undefined, {
+                data: undefined,
+                status: 400,
+                statusText: "some-error",
+                headers: {},
+                config: {
+                    headers: new AxiosHeaders(),
+                }
+            })
 
             const req = {
                 login: "some-user",
                 password: "password"
             } as LoginRequest;
 
-            mock.onPost(url, req).reply(500);
+            const historyMock = history;
+            historyMock.push = jest.fn();
 
             const mockSetErrors = jest.fn();
-
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, loginSaga, loginAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.LOGIN_FAILURE);
+            const saga = testSaga(loginSaga, action(UserActionTypes.LOGIN_REQUEST, req, mockSetErrors));
+            saga.next().call(Api.post, "/api/v1/users/login", JSON.stringify(req), false);
+            saga.throw(axiosError).put({type: UserActionTypes.LOGIN_FAILURE, payload: axiosError});
+            saga.next().isDone();
 
             expect(mockSetErrors).not.toHaveBeenCalled();
-        });
 
-        it("returns an error if there is a network error", async () => {
-            let dispatched: PayloadAction<string, string>[] = [];
-
-            const url = "/api/v1/users/login";
-
-            const req = {
-                login: "some-user",
-                password: "password"
-            } as LoginRequest;
-
-            mock.onPost(url, req).networkError();
-
-            const mockSetErrors = jest.fn();
-
-            await runSaga({
-                dispatch: (action: PayloadAction<string, string>) => dispatched.push(action)
-            }, loginSaga, loginAsync.request(req, mockSetErrors)).toPromise();
-
-            expect(dispatched).toHaveLength(1);
-            expect(dispatched[0].type).toEqual(UserActionTypes.LOGIN_FAILURE);
-
-            expect(mockSetErrors).not.toHaveBeenCalled();
+            expect(historyMock.push).not.toHaveBeenCalled();
         });
     });
 });

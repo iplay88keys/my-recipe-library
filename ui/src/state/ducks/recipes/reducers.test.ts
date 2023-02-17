@@ -1,6 +1,13 @@
 import { createRecipeAsync, fetchRecipeAsync, fetchRecipesAsync } from "./actions";
 import { recipeReducer } from "./reducers";
-import { Ingredient, RecipeResponse, RecipeCreateRequest, RecipeListResponse, Step } from "./types";
+import {
+    Ingredient,
+    RecipeResponse,
+    RecipeCreateRequest,
+    RecipeListResponse,
+    Step,
+    RecipeCreateResponse
+} from "./types";
 
 describe("reducer", () => {
     describe("list", () => {
@@ -18,7 +25,7 @@ describe("reducer", () => {
         });
 
         it("should handle FETCH_RECIPES_SUCCESS", () => {
-            let recipes = {
+            const recipes = {
                 recipes: [{
                     id: 0,
                     name: "First",
@@ -39,7 +46,7 @@ describe("reducer", () => {
         });
 
         it("should handle FETCH_RECIPES_FAILURE", () => {
-            let err = {
+            const err = {
                 message: "some error"
             } as Error;
 
@@ -71,7 +78,7 @@ describe("reducer", () => {
         });
 
         it("should handle FETCH_RECIPE_SUCCESS", () => {
-            let recipe = {
+            const recipe = {
                 id: 0,
                 name: "Root Beer Float",
                 description: "Delicious",
@@ -106,7 +113,7 @@ describe("reducer", () => {
         });
 
         it("should handle FETCH_RECIPE_FAILURE", () => {
-            let err = {
+            const err = {
                 message: "some error"
             } as Error;
 
@@ -146,7 +153,7 @@ describe("reducer", () => {
         });
 
         it("should handle CREATE_RECIPE_SUCCESS", () => {
-            const updatedState = recipeReducer(undefined, createRecipeAsync.success(2));
+            const updatedState = recipeReducer(undefined, createRecipeAsync.success(({recipe_id: 2}) as RecipeCreateResponse));
 
             expect(updatedState).toEqual({
                 recipes: [],
@@ -159,7 +166,7 @@ describe("reducer", () => {
         });
 
         it("should handle CREATE_RECIPE_FAILURE", () => {
-            let err = {
+            const err = {
                 message: "some error"
             } as Error;
 

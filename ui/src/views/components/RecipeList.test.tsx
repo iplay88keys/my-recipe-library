@@ -1,13 +1,10 @@
-import { Table, TableCell, TableContainer } from "@material-ui/core";
-import Enzyme, { mount, shallow } from "enzyme";
-import Adapter from "enzyme-adapter-react-16";
 import { createLocation, createMemoryHistory, Location, MemoryHistory } from "history";
 import React from "react";
 import { match } from "react-router";
 import { RecipeResponse } from "../../state/ducks/recipes/types";
-import { RecipeList, StyledTableRow } from "./RecipeList";
-
-Enzyme.configure({adapter: new Adapter()});
+import { RecipeList } from "./RecipeList";
+import { render, screen, within } from '@testing-library/react'
+import { Simulate } from "react-dom/test-utils";
 
 describe("RecipeListResponse", () => {
     let history: MemoryHistory;
@@ -39,7 +36,7 @@ describe("RecipeListResponse", () => {
             description: "Two"
         }] as RecipeResponse[];
 
-        const enzymeWrapper = mount(
+        render(
             <RecipeList
                 recipes={recipes}
                 loading={false}
@@ -49,14 +46,23 @@ describe("RecipeListResponse", () => {
             />
         );
 
-        expect(enzymeWrapper.find(TableContainer)).toHaveLength(1);
-        expect(enzymeWrapper.find(Table)).toHaveLength(1);
-        expect(enzymeWrapper.find(StyledTableRow).find(TableCell)).toHaveLength(4);
-        expect(enzymeWrapper.find(StyledTableRow).children()).toHaveLength(2);
-        expect(enzymeWrapper.find(StyledTableRow).at(0).find(TableCell).at(0).text()).toEqual("First");
-        expect(enzymeWrapper.find(StyledTableRow).at(0).find(TableCell).at(1).text()).toEqual("One");
-        expect(enzymeWrapper.find(StyledTableRow).at(1).find(TableCell).at(0).text()).toEqual("Second");
-        expect(enzymeWrapper.find(StyledTableRow).at(1).find(TableCell).at(1).text()).toEqual("Two");
+        const table = screen.getByRole("table", {name: /recipes/i});
+        const rows = within(table).getAllByRole("row")
+
+        expect(rows.length).toEqual(3)
+        let cells = within(rows[0]).getAllByRole("columnheader")
+        expect(cells[0]).toHaveTextContent("Recipe")
+        expect(cells[1]).toHaveTextContent("Description")
+
+        cells = within(rows[1]).getAllByRole("cell")
+        expect(cells.length).toEqual(2)
+        expect(cells[0]).toHaveTextContent("First")
+        expect(cells[1]).toHaveTextContent("One")
+
+        cells = within(rows[2]).getAllByRole("cell")
+        expect(cells.length).toEqual(2)
+        expect(cells[0]).toHaveTextContent("Second")
+        expect(cells[1]).toHaveTextContent("Two")
     });
 
     it("does not render missing data", () => {
@@ -65,7 +71,7 @@ describe("RecipeListResponse", () => {
             name: "First"
         }] as RecipeResponse[];
 
-        const enzymeWrapper = mount(
+        render(
             <RecipeList
                 recipes={recipes}
                 loading={false}
@@ -75,11 +81,18 @@ describe("RecipeListResponse", () => {
             />
         );
 
-        expect(enzymeWrapper.find(TableContainer)).toHaveLength(1);
-        expect(enzymeWrapper.find(Table)).toHaveLength(1);
-        expect(enzymeWrapper.find(StyledTableRow).children()).toHaveLength(1);
-        expect(enzymeWrapper.find(StyledTableRow).childAt(0).children()).toHaveLength(1);
-        expect(enzymeWrapper.find(StyledTableRow).childAt(0).childAt(0).text()).toEqual("First");
+        const table = screen.getByRole("table", {name: /recipes/i});
+        const rows = within(table).getAllByRole("row")
+
+        expect(rows.length).toEqual(2)
+
+        let cells = within(rows[0]).getAllByRole("columnheader")
+        expect(cells[0]).toHaveTextContent("Recipe")
+        expect(cells[1]).toHaveTextContent("Description")
+
+        cells = within(rows[1]).getAllByRole("cell")
+        expect(cells.length).toEqual(1)
+        expect(cells[0]).toHaveTextContent("First")
     });
 
     it("should load the single recipe page when the row is clicked", () => {
@@ -93,21 +106,10 @@ describe("RecipeListResponse", () => {
             description: "Two"
         }] as RecipeResponse[];
 
-        const historyMock = {
-            length: {} as any,
-            action: {} as any,
-            location: {} as any,
-            push: jest.fn(),
-            replace: jest.fn(),
-            go: jest.fn(),
-            goBack: jest.fn(),
-            goForward: jest.fn(),
-            block: jest.fn(),
-            listen: jest.fn(),
-            createHref: jest.fn()
-        };
+        const historyMock = history;
+        historyMock.push = jest.fn();
 
-        const enzymeWrapper = mount(
+        render(
             <RecipeList
                 recipes={recipes}
                 loading={false}
@@ -117,11 +119,15 @@ describe("RecipeListResponse", () => {
             />
         );
 
-        enzymeWrapper.find(StyledTableRow).at(0).simulate("click");
-        expect(historyMock.push.mock.calls[0]).toEqual(["/recipes/0"]);
+        const table = screen.getByRole("table", {name: /recipes/i});
+        const rows = within(table).getAllByRole("row");
 
-        enzymeWrapper.find(StyledTableRow).at(1).simulate("click");
-        expect(historyMock.push.mock.calls[1]).toEqual(["/recipes/1"]);
+        Simulate.click(rows[1]);
+        expect(historyMock.push).toHaveBeenCalledWith("/recipes/0");
+
+        historyMock.push = jest.fn();
+        Simulate.click(rows[2]);
+        expect(historyMock.push).toHaveBeenCalledWith("/recipes/1");
     });
 
     it("should render loading info when loading", () => {
@@ -129,7 +135,7 @@ describe("RecipeListResponse", () => {
             recipes: [] as RecipeResponse[]
         };
 
-        const enzymeWrapper = shallow(
+        render(
             <RecipeList
                 recipes={props.recipes}
                 loading={true}
@@ -139,7 +145,6 @@ describe("RecipeListResponse", () => {
             />
         );
 
-        expect(enzymeWrapper.find("div")).toHaveLength(1);
-        expect(enzymeWrapper.find("div p").text()).toBe("Loading recipes");
+        expect(screen.getByText("Loading recipes")).toBeInTheDocument();
     });
 });

@@ -61,7 +61,7 @@ const reducer: Reducer<RecipeState, RecipeAction> = (state = initialState, actio
             return {
                 ...state,
                 creating: false,
-                recipe_id: action.payload
+                recipe_id: action.payload.recipe_id
             };
         case getType(createRecipeAsync.failure):
             return {

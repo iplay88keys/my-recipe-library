@@ -1,149 +1,119 @@
-import { TextField } from "@material-ui/core";
-import { act } from "@testing-library/react";
-import Enzyme, { mount, ReactWrapper } from "enzyme";
-import Adapter from "enzyme-adapter-react-16";
-import React, { ChangeEvent, FocusEvent } from "react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from '@testing-library/user-event'
+import React from "react";
 import { loginAsync } from "../../state/ducks/users/actions";
-import Login, { LoginFormInner } from "./Login";
-
-Enzyme.configure({adapter: new Adapter()});
+import Login from "./Login";
 
 describe("Login", () => {
-    it("should render a form for logging in", () => {
-        let login = jest.fn(loginAsync.request);
+    it("should render a form and allow logging in", async () => {
+        const login = jest.fn();
 
-        const enzymeWrapper = mount(
+        render(
             <Login
                 login={login}
             />
         );
 
-        expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).text()).toEqual("Username/Email Address *Username/Email Address *");
-        expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).text()).toEqual("Password *Password *");
+        const user = userEvent.setup()
+
+        await user.type(screen.getByPlaceholderText("Username or Email Address"), "test-username")
+        await user.type(screen.getByPlaceholderText("Password"), "test-password")
+
+        const submitButton = screen.getByRole("button")
+        expect(submitButton).toHaveTextContent("Login");
+        await user.click(submitButton)
+
+        expect(login).toHaveBeenCalledWith({
+            "login": "test-username",
+            "password": "test-password",
+        }, expect.any(Function))
     });
 
     describe("form validation errors", () => {
-        let enzymeWrapper: ReactWrapper;
-
-        beforeEach(() => {
-            let login = jest.fn(loginAsync.request);
-
-            enzymeWrapper = mount(
-                <Login
-                    login={login}
-                />
-            );
-
-        });
-
-        describe("login", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().onBlur!({
-                        preventDefault() {},
-                        target: {
-                            name: "login"
-                        }
-                    } as FocusEvent<HTMLInputElement>);
-
-                    enzymeWrapper.update();
-                });
-            });
-
+        describe("username", () => {
             it("is required", async () => {
-                await act(async () => {
-                    enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().onChange!({
-                        preventDefault() {},
-                        target: {
-                            name: "login",
-                            value: ""
-                        }
-                    } as ChangeEvent<HTMLInputElement>);
-                });
+                const login = jest.fn(loginAsync.request);
 
-                enzymeWrapper.update();
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().value).toEqual("");
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().error).toEqual(true);
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().helperText)
-                    .toEqual("Required");
+                render(
+                    <Login
+                        login={login}
+                    />
+                );
+
+                const user = userEvent.setup()
+
+                expect(screen.queryByText("Required")).not.toBeInTheDocument();
+
+                await user.type(screen.getByPlaceholderText("Password"), "test-password")
+
+                const submitButton = screen.getByRole("button")
+                expect(submitButton).toHaveTextContent("Login");
+                await user.click(submitButton)
+
+                const loginSection = screen.getByTestId("loginSection")
+                expect(within(loginSection).getByText("Required")).toBeInTheDocument()
             });
         });
 
         describe("password", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().onBlur!({
-                        preventDefault() {},
-                        target: {
-                            name: "password"
-                        }
-                    } as FocusEvent<HTMLInputElement>);
-
-                    enzymeWrapper.update();
-                });
-            });
-
             it("is required", async () => {
-                await act(async () => {
-                    enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().onChange!({
-                        preventDefault() {},
-                        target: {
-                            name: "password",
-                            value: ""
-                        }
-                    } as ChangeEvent<HTMLInputElement>);
-                });
+                const login = jest.fn(loginAsync.request);
 
-                enzymeWrapper.update();
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().value).toEqual("");
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().error).toEqual(true);
-                expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().helperText)
-                    .toEqual("Required");
+                render(
+                    <Login
+                        login={login}
+                    />
+                );
+
+                const user = userEvent.setup()
+
+                expect(screen.queryByText("Required")).not.toBeInTheDocument();
+
+                await user.type(screen.getByPlaceholderText("Username or Email Address"), "test-user")
+
+                const submitButton = screen.getByRole("button")
+                expect(submitButton).toHaveTextContent("Login");
+                await user.click(submitButton)
+
+                const passwordSection = screen.getByTestId("passwordSection")
+                expect(within(passwordSection).getByText("Required")).toBeInTheDocument()
             });
         });
     });
 
-    describe("api validation errors", () => {
-        it("displays username errors", async () => {
-            let login = jest.fn(loginAsync.request);
-
-            let enzymeWrapper = mount(
-                <Login
-                    login={login}
-                />
-            );
-
-            await act(async () => {
-                enzymeWrapper.find(LoginFormInner).props().setStatus({"login": "Api Error"});
-            });
-
-            enzymeWrapper.update();
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().value)
-                .toEqual("");
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().error).toEqual(true);
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(0).props().helperText)
-                .toEqual("Api Error");
-        });
-
-        it("displays password errors", async () => {
-            let login = jest.fn(loginAsync.request);
-
-            let enzymeWrapper = mount(
-                <Login
-                    login={login}
-                />
-            );
-
-            await act(async () => {
-                enzymeWrapper.find(LoginFormInner).props().setStatus({"password": "Api Error"});
-            });
-
-            enzymeWrapper.update();
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().value)
-                .toEqual("");
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().error).toEqual(true);
-            expect(enzymeWrapper.find(LoginFormInner).find(TextField).at(1).props().helperText)
-                .toEqual("Api Error");
-        });
-    });
+    // There are no api validation errors for specific fields at this point
+    //
+    // describe("api validation errors", () => {
+    //     it("displays username errors", async () => {
+    //         const login = jest.fn(loginAsync.request);
+    //         login.mockImplementation((payload: LoginRequest, meta: (errors: FormikErrors<LoginFormValues>) => void): any => {
+    //             meta({alert: "error logging in"} as FormikErrors<LoginFormValues>);
+    //         });
+    //
+    //         const {rerender} = render(
+    //             <Login
+    //                 login={login}
+    //             />
+    //         );
+    //
+    //         rerender(
+    //             <Login
+    //                 login={login}
+    //             />
+    //         );
+    //
+    //         const user = userEvent.setup()
+    //
+    //         expect(screen.queryByText("Required")).not.toBeInTheDocument();
+    //
+    //         await user.type(screen.getByPlaceholderText("Username or Email Address"), "test-username")
+    //         await user.type(screen.getByPlaceholderText("Password"), "test-password")
+    //
+    //         const submitButton = screen.getByRole("button")
+    //         expect(submitButton).toHaveTextContent("Login");
+    //         await user.click(submitButton)
+    //
+    //         expect(login).toHaveBeenCalled();
+    //     });
+    // });
 });

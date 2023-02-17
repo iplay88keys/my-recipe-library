@@ -21,7 +21,9 @@ const isLocalhost = Boolean(
 );
 
 type Config = {
+    // eslint-disable-next-line no-unused-vars
     onSuccess?: (registration: ServiceWorkerRegistration) => void;
+    // eslint-disable-next-line no-unused-vars
     onUpdate?: (registration: ServiceWorkerRegistration) => void;
 };
 
@@ -48,6 +50,7 @@ export function register(config?: Config) {
 
                 // Add some additional logging to localhost, pointing developers to the
                 // service worker/PWA documentation.
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 navigator.serviceWorker.ready.then(() => {
                     console.log(
                         'This web app is being served cache-first by a service ' +
@@ -119,7 +122,9 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
                 (contentType != null && contentType.indexOf('javascript') === -1)
             ) {
                 // No service worker found. Probably a different app. Reload the page.
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 navigator.serviceWorker.ready.then(registration => {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
                     registration.unregister().then(() => {
                         window.location.reload();
                     });
@@ -138,7 +143,9 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
 
 export function unregister() {
     if ('serviceWorker' in navigator) {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         navigator.serviceWorker.ready.then(registration => {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             registration.unregister();
         });
     }

@@ -1,4 +1,4 @@
-import { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { call, put, takeEvery } from "redux-saga/effects";
 import Api from "../../../api/api";
 import { logout } from "../users/actions";
@@ -10,12 +10,19 @@ export function* listRecipeSaga(): Generator {
         const response = (yield call(Api.get, "/api/v1/recipes")) as AxiosResponse;
 
         yield put(fetchRecipesAsync.success((response.data) as RecipeListResponse));
-    } catch (err) {
-        if (err.response && err.response.status === 401) {
-            yield put(logout());
-        }
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const error = err as AxiosError<RecipeListResponse>;
+            if (error.status === 401 || error.response && error.response.status === 401) {
+                yield put(logout());
+            }
 
-        yield put(fetchRecipesAsync.failure(err));
+            yield put(fetchRecipesAsync.failure(error));
+        } else if (err instanceof Error) {
+            console.log("list recipes error: ", err.message)
+        } else {
+            console.log("unknown list recipes error")
+        }
     }
 }
 
@@ -24,12 +31,20 @@ export function* getRecipeSaga(action: ReturnType<typeof fetchRecipeAsync.reques
         const response = (yield call(Api.get, `/api/v1/recipes/${action.payload}`)) as AxiosResponse;
 
         yield put(fetchRecipeAsync.success((response.data) as RecipeResponse));
-    } catch (err) {
-        if (err.response && err.response.status === 401) {
-            yield put(logout());
-        }
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const error = err as AxiosError<RecipeResponse>;
 
-        yield put(fetchRecipeAsync.failure(err));
+            if (error.response && error.response.status === 401) {
+                yield put(logout());
+            }
+
+            yield put(fetchRecipeAsync.failure(error));
+        } else if (err instanceof Error) {
+            console.log("get recipe error: ", err.message)
+        } else {
+            console.log("unknown get recipe error")
+        }
     }
 }
 
@@ -37,18 +52,25 @@ export function* createRecipeSaga(action: ReturnType<typeof createRecipeAsync.re
     try {
         const response = (yield call(Api.post, "/api/v1/recipes", JSON.stringify(action.payload))) as AxiosResponse;
 
-        let data = (response.data) as RecipeCreateResponse;
-        yield put(createRecipeAsync.success(data.recipe_id));
-    } catch (err) {
-        if (err.response && err.response.status === 401) {
-            yield put(logout());
-        }
+        yield put(createRecipeAsync.success((response.data) as RecipeCreateResponse));
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const error = err as AxiosError<RecipeCreateResponse>;
 
-        if (err.response && err.response.data && err.response.data.errors) {
-            action.meta(err.response.data.errors);
-        }
+            if (error.response && error.response.status === 401) {
+                yield put(logout());
+            }
 
-        yield put(createRecipeAsync.failure(err));
+            if (error.response && error.response.data && error.response.data.errors) {
+                action.meta(error.response.data.errors);
+            }
+
+            yield put(createRecipeAsync.failure(error));
+        } else if (err instanceof Error) {
+            console.log("create recipe error: ", err.message)
+        } else {
+            console.log("unknown create recipe error")
+        }
     }
 }
 

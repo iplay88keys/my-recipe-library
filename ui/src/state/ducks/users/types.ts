@@ -1,3 +1,5 @@
+import { APIError } from "../types";
+
 export interface RegisterRequest {
     username: string
     email: string
@@ -21,10 +23,6 @@ export interface LoginResponse {
 
 export interface LogoutRequest {
     access_token: string
-}
-
-export interface APIError {
-    [key: string]: string
 }
 
 export interface UserState {

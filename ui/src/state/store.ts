@@ -1,17 +1,16 @@
-import { createRootReducer, rootSaga } from "./ducks";
-import { applyMiddleware, createStore } from "redux";
-import { composeWithDevTools } from "redux-devtools-extension";
+import { configureStore } from "@reduxjs/toolkit";
+import { reducer, rootSaga } from "./ducks";
 import createSagaMiddleware from "redux-saga";
 
-export default function configureStore() {
+export default function setupStore() {
     const sagaMiddleware = createSagaMiddleware();
+    const middleware = [sagaMiddleware]
 
-    let store = createStore(
-        createRootReducer(),
-        composeWithDevTools(
-            applyMiddleware(sagaMiddleware)
-        )
-    );
+    const store = configureStore({
+        reducer,
+        middleware: (getDefaultMiddleware) =>
+            getDefaultMiddleware().concat(middleware)
+    });
 
     sagaMiddleware.run(rootSaga);
 

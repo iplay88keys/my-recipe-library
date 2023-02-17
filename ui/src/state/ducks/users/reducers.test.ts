@@ -34,7 +34,7 @@ describe("reducer", () => {
         });
 
         it("should handle REGISTER_FAILURE", () => {
-            let err = {
+            const err = {
                 message: "some error"
             } as Error;
 
@@ -79,7 +79,7 @@ describe("reducer", () => {
         });
 
         it("should handle LOGIN_FAILURE", () => {
-            let err = {
+            const err = {
                 message: "some error"
             } as Error;
 

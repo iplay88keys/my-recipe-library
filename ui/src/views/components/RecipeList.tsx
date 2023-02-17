@@ -33,7 +33,7 @@ export const RecipeList = ({recipes, loading, history}: RecipeListProps) => {
 
     return (
         <TableContainer component={Paper}>
-            <Table aria-label="simple table">
+            <Table aria-label="recipes">
                 <TableHead>
                     <TableRow>
                         <TableCell>Recipe</TableCell>

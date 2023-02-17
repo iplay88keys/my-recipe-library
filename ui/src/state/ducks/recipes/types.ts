@@ -1,4 +1,4 @@
-import { APIError } from "../users/types";
+import { APIError } from "../types";
 
 export interface RecipeCreateResponse {
     recipe_id: number

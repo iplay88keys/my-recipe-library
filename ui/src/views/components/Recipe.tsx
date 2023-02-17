@@ -29,7 +29,7 @@ const StyledRecipeName = styled.div`
 StyledRecipeName.displayName = "StyledRecipeName";
 
 const StyledRecipeImage = styled.img`
-    max-height: 50vh
+    max-height: 50vh;
     overflow: auto;
 `;
 StyledRecipeImage.displayName = "StyledRecipeImage";
@@ -100,14 +100,14 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
     let leftIngredients = recipe.ingredients;
     let rightIngredients = [] as Ingredient[];
     if (recipe.ingredients) {
-        let half = Math.ceil(recipe.ingredients.length / 2);
+        const half = Math.ceil(recipe.ingredients.length / 2);
         leftIngredients = recipe.ingredients.slice(0, half);
         rightIngredients = recipe.ingredients.slice(half, recipe.ingredients.length);
     }
 
     return (
         <StyledRecipe>
-            <StyledRecipeBreadcrumbs>
+            <StyledRecipeBreadcrumbs >
                 <Link to="/recipes">Recipes</Link> / <Link to="#cookbook">Cookbook</Link> / <Link
                 to="#section">Section</Link>
             </StyledRecipeBreadcrumbs>
@@ -141,7 +141,7 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
                 {ingredientsListElement(rightIngredients)}
             </StyledRecipeIngredients>
             <StyledRecipeSteps>
-                <ol>
+                <ol data-testid="steps">
                     {recipe.steps && recipe.steps.map((step: Step) =>
                         <li key={step.step_number}>
                             {step.instructions}
@@ -176,7 +176,7 @@ function formatIngredient(ingredient: Ingredient): string {
 function ingredientsListElement(ingredients: Ingredient[]): JSX.Element {
     return (
         <div>
-            <ul>
+            <ul data-testid="ingredients">
                 {ingredients && ingredients.map((ingredient: Ingredient) =>
                     <li key={ingredient.ingredient_number}>
                         {formatIngredient(ingredient)}

@@ -1,6 +1,6 @@
 import { Button, Container, CssBaseline, TextField, Typography } from "@material-ui/core";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import { FormikHelpers, FormikProps, FormikTouched, getIn, withFormik } from "formik";
+import { FormikHelpers, FormikProps, FormikTouched, withFormik } from "formik";
 import React from "react";
 import * as Yup from "yup";
 import { createRecipeAsync } from "../../state/ducks/recipes/actions";
@@ -34,25 +34,25 @@ export interface NewRecipeFormValues {
     doCreate: typeof createRecipeAsync.request
 }
 
-const showError = (field: string, formikProps: FormikProps<NewRecipeFormValues>): boolean => {
-    return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
-        (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
-};
+// const showError = (field: string, formikProps: FormikProps<NewRecipeFormValues>): boolean => {
+//     return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
+//         (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
+// };
+//
+// const errorMessage = (field: string, formikProps: FormikProps<NewRecipeFormValues>): string => {
+//     if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
+//         return getIn(formikProps.status, field);
+//     } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
+//         return getIn(formikProps.errors, field);
+//     } else {
+//         return "";
+//     }
+// };
 
-const errorMessage = (field: string, formikProps: FormikProps<NewRecipeFormValues>): string => {
-    if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
-        return getIn(formikProps.status, field);
-    } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
-        return getIn(formikProps.errors, field);
-    } else {
-        return "";
-    }
-};
-
-let handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeFormValues>) => {
+const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeFormValues>) => {
     const {doCreate} = values;
     if (values.name && values.description && values.servings) {
-        let recipe: RecipeCreateRequest = {
+        const recipe: RecipeCreateRequest = {
             name: values.name,
             description: values.description,
             servings: values.servings,
@@ -77,7 +77,7 @@ let handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeF
 };
 
 export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
-    const {handleSubmit, getFieldProps, isSubmitting} = props;
+    const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
 
     const classes = useStyles();
 
@@ -94,8 +94,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Name"
                         margin="normal"
-                        error={showError("name", props)}
-                        helperText={errorMessage("name", props)}
+                        error={touched.name && Boolean(errors.name)}
+                        helperText={touched.name && errors.name}
                         {...getFieldProps("name")}
                         required
                         fullWidth
@@ -105,8 +105,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Description"
                         margin="normal"
-                        error={showError("description", props)}
-                        helperText={errorMessage("description", props)}
+                        error={touched.description && Boolean(errors.description)}
+                        helperText={touched.description && errors.description}
                         {...getFieldProps("description")}
                         required
                         fullWidth
@@ -117,8 +117,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Servings"
                         margin="normal"
-                        error={showError("servings", props)}
-                        helperText={errorMessage("servings", props)}
+                        error={touched.servings && Boolean(errors.servings)}
+                        helperText={touched.servings && errors.servings}
                         {...getFieldProps("servings")}
                         required
                         fullWidth
@@ -128,8 +128,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Prep Time"
                         margin="normal"
-                        error={showError("prep_time", props)}
-                        helperText={errorMessage("prep_time", props)}
+                        error={touched.prep_time && Boolean(errors.prep_time)}
+                        helperText={touched.prep_time && errors.prep_time}
                         {...getFieldProps("prep_time")}
                         fullWidth
                     />
@@ -138,8 +138,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Cook Time"
                         margin="normal"
-                        error={showError("cook_time", props)}
-                        helperText={errorMessage("cook_time", props)}
+                        error={touched.cook_time && Boolean(errors.cook_time)}
+                        helperText={touched.cook_time && errors.cook_time}
                         {...getFieldProps("cook_time")}
                         fullWidth
                     />
@@ -148,8 +148,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Cool Time"
                         margin="normal"
-                        error={showError("cool_time", props)}
-                        helperText={errorMessage("cool_time", props)}
+                        error={touched.cool_time && Boolean(errors.cool_time)}
+                        helperText={touched.cool_time && errors.cool_time}
                         {...getFieldProps("cool_time")}
                         fullWidth
                     />
@@ -158,8 +158,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Total Time"
                         margin="normal"
-                        error={showError("total_time", props)}
-                        helperText={errorMessage("total_time", props)}
+                        error={touched.total_time && Boolean(errors.total_time)}
+                        helperText={touched.total_time && errors.total_time}
                         {...getFieldProps("total_time")}
                         fullWidth
                     />
@@ -169,8 +169,8 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         variant="outlined"
                         label="Source"
                         margin="normal"
-                        error={showError("source", props)}
-                        helperText={errorMessage("source", props)}
+                        error={touched.source && Boolean(errors.source)}
+                        helperText={touched.source && errors.source}
                         {...getFieldProps("source")}
                         fullWidth
                     />

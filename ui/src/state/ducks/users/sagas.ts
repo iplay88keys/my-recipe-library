@@ -1,9 +1,9 @@
-import { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { call, put, takeEvery } from "redux-saga/effects";
 import Api from "../../../api/api";
 import { history } from "../../../helpers/history";
 import { loginAsync, registerAsync } from "./actions";
-import { LoginResponse, LogoutRequest, UserActionTypes } from "./types";
+import { LoginResponse, LogoutRequest, RegisterResponse, UserActionTypes } from "./types";
 
 export function* registerSaga(action: ReturnType<typeof registerAsync.request>): Generator {
     try {
@@ -11,12 +11,19 @@ export function* registerSaga(action: ReturnType<typeof registerAsync.request>):
 
         yield put(registerAsync.success());
         history.push("/login");
-    } catch (err) {
-        if (err.response && err.response.data && err.response.data.errors) {
-            action.meta(err.response.data.errors);
-        }
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const error = err as AxiosError<RegisterResponse>;
+            if (error.response && error.response.data && error.response.data.errors) {
+                action.meta(error.response.data.errors);
+            }
 
-        yield put(registerAsync.failure(err));
+            yield put(registerAsync.failure(err));
+        } else if (err instanceof Error) {
+            console.log(err.message)
+        } else {
+            console.log("unknown create recipe error")
+        }
     }
 }
 
@@ -26,26 +33,34 @@ export function* loginSaga(action: ReturnType<typeof loginAsync.request>): Gener
 
         yield put(loginAsync.success());
 
-        let data = (response.data) as LoginResponse;
+        const data = (response.data) as LoginResponse;
         localStorage.setItem("access_token", data.access_token);
 
         history.push("/recipes");
-    } catch (err) {
-        if (err.response && err.response.data && err.response.data.errors) {
-            action.meta(err.response.data.errors);
-        }
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const error = err as AxiosError<LoginResponse>;
+            if (error.response && error.response.data && error.response.data.errors) {
+                action.meta(error.response.data.errors);
+            }
 
-        yield put(loginAsync.failure(err));
+            yield put(loginAsync.failure(error));
+        } else if (err instanceof Error) {
+            console.log(err.message)
+        } else {
+            console.log("unknown create recipe error")
+        }
     }
 }
 
 export function* logoutSaga(): Generator {
-    let token = localStorage.getItem("access_token") || null;
+    const token = localStorage.getItem("access_token") || null;
 
-    let payload = {
+    const payload = {
         access_token: token
     } as LogoutRequest;
 
+    /* eslint no-empty: ["error", { "allowEmptyCatch": true }] */
     try {
         yield call(Api.post, "/api/v1/users/logout", JSON.stringify(payload));
     } catch (err) {}

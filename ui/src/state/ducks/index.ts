@@ -1,4 +1,3 @@
-import { combineReducers } from "redux";
 import { all } from "redux-saga/effects";
 
 import { recipeReducer } from "./recipes/reducers";
@@ -13,10 +12,10 @@ export interface ApplicationState {
     users: UserState
 }
 
-export const createRootReducer = () => combineReducers({
+export const reducer = {
     recipes: recipeReducer,
     users: userReducer
-});
+};
 
 export function* rootSaga() {
     yield all([

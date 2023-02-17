@@ -1,6 +1,6 @@
 import { Button, Container, CssBaseline, TextField, Typography } from "@material-ui/core";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import { FormikHelpers, FormikProps, FormikTouched, getIn, withFormik } from "formik";
+import { FormikHelpers, FormikProps, FormikTouched, withFormik } from "formik";
 import React from "react";
 import * as Yup from "yup";
 import { registerAsync } from "../../state/ducks/users/actions";
@@ -30,25 +30,25 @@ export interface RegistrationFormValues {
     doRegister: typeof registerAsync.request
 }
 
-const showError = (field: string, formikProps: FormikProps<RegistrationFormValues>): boolean => {
-    return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
-        (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
-};
+// const showError = (field: string, formikProps: FormikProps<RegistrationFormValues>): boolean => {
+//     return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
+//         (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
+// };
+//
+// const errorMessage = (field: string, formikProps: FormikProps<RegistrationFormValues>): string => {
+//     if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
+//         return getIn(formikProps.status, field);
+//     } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
+//         return getIn(formikProps.errors, field);
+//     } else {
+//         return "";
+//     }
+// };
 
-const errorMessage = (field: string, formikProps: FormikProps<RegistrationFormValues>): string => {
-    if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
-        return getIn(formikProps.status, field);
-    } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
-        return getIn(formikProps.errors, field);
-    } else {
-        return "";
-    }
-};
-
-let handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<RegistrationFormValues>) => {
+const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<RegistrationFormValues>) => {
     const {doRegister} = values;
     if (values.username && values.email && values.password) {
-        let user: RegisterRequest = {
+        const user: RegisterRequest = {
             username: values.username,
             email: values.email,
             password: values.password
@@ -68,7 +68,7 @@ let handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<Registr
 };
 
 export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>) => {
-    const {handleSubmit, getFieldProps, isSubmitting} = props;
+    const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
 
     const classes = useStyles();
 
@@ -86,8 +86,8 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Username"
                         margin="normal"
-                        error={showError("username", props)}
-                        helperText={errorMessage("username", props)}
+                        error={touched.username && Boolean(errors.username)}
+                        helperText={touched.username && errors.username}
                         {...getFieldProps("username")}
                         required
                         fullWidth
@@ -98,34 +98,32 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Email"
                         margin="normal"
-                        error={showError("email", props)}
-                        helperText={errorMessage("email", props)}
+                        error={touched.email && Boolean(errors.email)}
+                        helperText={touched.email && errors.email}
                         {...getFieldProps("email")}
                         required
                         fullWidth
                     />
                     <TextField
                         type="password"
-                        name="password"
                         placeholder="Password"
                         variant="outlined"
                         label="Password"
                         margin="normal"
-                        error={showError("password", props)}
-                        helperText={errorMessage("password", props)}
+                        error={touched.password && Boolean(errors.password)}
+                        helperText={touched.password && errors.password}
                         {...getFieldProps("password")}
                         required
                         fullWidth
                     />
                     <TextField
                         type="password"
-                        name="passwordConfirmation"
                         placeholder="Confirm Your Password"
                         variant="outlined"
                         label="Confirm Password"
                         margin="normal"
-                        error={showError("passwordConfirmation", props)}
-                        helperText={errorMessage("passwordConfirmation", props)}
+                        error={touched.passwordConfirmation && Boolean(errors.passwordConfirmation)}
+                        helperText={touched.passwordConfirmation && errors.passwordConfirmation}
                         {...getFieldProps("passwordConfirmation")}
                         required
                         fullWidth
@@ -160,24 +158,20 @@ export default withFormik<RegistrationFormProps, RegistrationFormValues>({
     }),
     validationSchema: Yup.object({
         username: Yup.string()
-                     .min(6, "Must be 6 characters or more")
-                     .max(30, "Must be 30 characters or less")
-                     .matches(/^[a-zA-Z][\w]*/, "Must start with a letter and only contain alphanumeric characters and underscores (_)")
-                     .required("Required"),
+            .min(6, "Must be 6 characters or more")
+            .max(30, "Must be 30 characters or less")
+            .matches(/^[a-zA-Z][\w]*/, "Must start with a letter and only contain alphanumeric characters and underscores (_)")
+            .required("Required"),
         email: Yup.string()
-                  .matches(/.*@.*\..*/, "Must be a valid email")
-                  .required("Required"),
+            .matches(/.*@.*\..*/, "Must be a valid email")
+            .required("Required"),
         password: Yup.string()
-                     .min(6, "Must be 6 characters or more")
-                     .max(64, "Must be 64 characters or less")
-                     .matches(/[\d\w\W]*/, "Must contain at least one lowercase, uppercase, number, and special character")
-                     .required("Required"),
-        passwordConfirmation: Yup.mixed()
-                                 .test("match", "Passwords do not match",
-                                     function () {
-                                         return this.parent.password === this.parent.passwordConfirmation;
-                                     })
-                                 .required("Required")
+            .min(6, "Must be 6 characters or more")
+            .max(64, "Must be 64 characters or less")
+            .matches(/[\d\w\W]*/, "Must contain at least one lowercase, uppercase, number, and special character")
+            .required("Required"),
+        passwordConfirmation: Yup.string()
+            .oneOf([Yup.ref("password")], "Passwords do not match")
     }),
     handleSubmit: handleSubmit
 })(RegistrationFormInner);

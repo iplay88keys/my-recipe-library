@@ -2,9 +2,9 @@ import axios from "axios";
 
 export default class Api {
     static async get(url: string, auth: boolean = true) {
-        let token = localStorage.getItem("access_token") ?? null;
+        const token = localStorage.getItem("access_token") ?? null;
 
-        let config = {
+        const config = {
             headers: {
                 "Accept": "application/json",
                 ...(auth && token && {"Authorization": "bearer " + token})
@@ -19,9 +19,9 @@ export default class Api {
     }
 
     static async post(url: string, body: string, auth: boolean = true) {
-        let token = localStorage.getItem("access_token") ?? null;
+        const token = localStorage.getItem("access_token") ?? null;
 
-        let config = {
+        const config = {
             headers: {
                 "Accept": "application/json",
                 "Content-Type": "application/json",

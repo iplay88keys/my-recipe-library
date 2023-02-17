@@ -1,5 +1,12 @@
 import { createRecipeAsync, fetchRecipeAsync, fetchRecipesAsync } from "./actions";
-import { Ingredient, RecipeActionTypes, RecipeCreateResponse, RecipeResponse, Step } from "./types";
+import {
+    Ingredient,
+    RecipeActionTypes,
+    RecipeCreateRequest,
+    RecipeCreateResponse,
+    RecipeResponse,
+    Step
+} from "./types";
 
 describe("actions", () => {
     describe("list", () => {
@@ -49,7 +56,7 @@ describe("actions", () => {
         });
 
         it("should create a successful action to receive recipes", () => {
-            let recipe = {
+            const recipe = {
                 id: 0,
                 name: "Root Beer Float",
                 description: "Delicious",
@@ -88,10 +95,23 @@ describe("actions", () => {
 
     describe("create", () => {
         it("should create an action to create a recipe", () => {
+            const recipe = {
+                name: "some-name",
+                description: "some-description",
+                servings: 0,
+                prep_time: "1m",
+                cook_time: "2m",
+                cool_time: "3m",
+                total_time: "6m",
+                source: "some-source",
+            } as RecipeCreateRequest;
+            const mockSetErrors = jest.fn();
             const expectedAction = {
-                type: RecipeActionTypes.CREATE_RECIPE_REQUEST
+                type: RecipeActionTypes.CREATE_RECIPE_REQUEST,
+                payload: recipe,
+                meta: mockSetErrors
             };
-            expect(createRecipeAsync.request()).toEqual(expectedAction);
+            expect(createRecipeAsync.request(recipe, mockSetErrors)).toEqual(expectedAction);
         });
 
         it("should create a successful action to create a recipe", () => {

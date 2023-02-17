@@ -1,6 +1,6 @@
 import { Button, Container, CssBaseline, TextField, Typography } from "@material-ui/core";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import { FormikHelpers, FormikProps, FormikTouched, getIn, withFormik } from "formik";
+import { FormikBag, FormikHelpers, FormikProps, FormikTouched, withFormik } from "formik";
 import React from "react";
 import * as Yup from "yup";
 import { loginAsync } from "../../state/ducks/users/actions";
@@ -28,31 +28,16 @@ export interface LoginFormValues {
     doLogin: typeof loginAsync.request
 }
 
-const showError = (field: string, formikProps: FormikProps<LoginFormValues>): boolean => {
-    return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
-        (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
-};
-
-const errorMessage = (field: string, formikProps: FormikProps<LoginFormValues>): string => {
-    if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
-        return getIn(formikProps.status, field);
-    } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
-        return getIn(formikProps.errors, field);
-    } else {
-        return "";
-    }
-};
-
-let handleSubmit = (values: LoginFormValues, props: FormikHelpers<LoginFormValues>) => {
+const handleSubmit = (values: LoginFormValues, props: FormikBag<LoginFormProps, LoginFormValues>) => {
     const {doLogin} = values;
     if (values.login && values.password) {
-        let user: LoginRequest = {
+        const request: LoginRequest = {
             login: values.login,
             password: values.password
         };
 
         props.setStatus({});
-        doLogin(user, props.setStatus);
+        doLogin(request, props.setStatus);
     }
 
     props.setSubmitting(false);
@@ -65,7 +50,8 @@ let handleSubmit = (values: LoginFormValues, props: FormikHelpers<LoginFormValue
 };
 
 export const LoginFormInner = (props: FormikProps<LoginFormValues>) => {
-    const {handleSubmit, getFieldProps, isSubmitting} = props;
+    const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
+    console.log(errors.login);
 
     const classes = useStyles();
 
@@ -76,27 +62,35 @@ export const LoginFormInner = (props: FormikProps<LoginFormValues>) => {
                 <Typography component="h1" variant="h5">
                     Login
                 </Typography>
-                <form onSubmit={handleSubmit} className={classes.form}>
+                <form
+                    aria-label="Login"
+                    name="loginForm"
+                    className={classes.form}
+                    onSubmit={handleSubmit}
+                >
                     <TextField
+                        data-testid="loginSection"
+                        aria-label="loginName"
                         placeholder="Username or Email Address"
                         variant="outlined"
                         label="Username/Email Address"
                         margin="normal"
-                        error={showError("login", props)}
-                        helperText={errorMessage("login", props)}
+                        error={touched.login && Boolean(errors.login)}
+                        helperText={touched.login && errors.login}
                         {...getFieldProps("login")}
                         required
                         fullWidth
                     />
                     <TextField
+                        data-testid="passwordSection"
+                        aria-label="password"
                         type="password"
-                        name="password"
                         placeholder="Password"
                         variant="outlined"
                         label="Password"
                         margin="normal"
-                        error={showError("password", props)}
-                        helperText={errorMessage("password", props)}
+                        error={touched.password && Boolean(errors.password)}
+                        helperText={touched.password && errors.password}
                         {...getFieldProps("password")}
                         required
                         fullWidth
