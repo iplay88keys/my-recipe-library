@@ -78,10 +78,14 @@ export REFRESH_SECRET="refresh_secret"
 
 if [[ "${skipBackend}" = "false" ]]; then
     echo "Running ginkgo for everything except integration"
-    ginkgo -r -p -skip-package pkg/integration --output-interceptor-mode=none
+    pushd ${root_dir}
+      ginkgo -r -p -skip-package pkg/integration --output-interceptor-mode=none
+    popd
 fi
 
 if [[ "${skipIntegration}" = "false" ]]; then
     echo "Running ginkgo for integration"
-    ginkgo -r pkg/integration --output-interceptor-mode=none
+    pushd ${root_dir}
+      ginkgo -r pkg/integration --output-interceptor-mode=none
+    popd
 fi
