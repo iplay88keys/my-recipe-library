@@ -22,7 +22,7 @@ class NewRecipePage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = ({}: ApplicationState) => ({});
+const mapStateToProps = (_: ApplicationState) => ({});
 
 const mapDispatchToProps = {
     create: createRecipeAsync.request

@@ -22,7 +22,7 @@ class RegisterPage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = ({}: ApplicationState) => ({});
+const mapStateToProps = (_: ApplicationState) => ({});
 
 const mapDispatchToProps = {
     register: registerAsync.request

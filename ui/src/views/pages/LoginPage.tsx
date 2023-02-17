@@ -29,7 +29,7 @@ class LoginPage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = ({}: ApplicationState) => ({});
+const mapStateToProps = (_: ApplicationState) => ({});
 
 const mapDispatchToProps = {
     login: loginAsync.request,

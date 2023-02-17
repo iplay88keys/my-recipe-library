@@ -69,7 +69,7 @@ let handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeF
 
     props.setSubmitting(false);
     let newTouched = {} as FormikTouched<NewRecipeFormValues>;
-    Object.keys(values).map(key => {
+    Object.keys(values).forEach(key => {
         newTouched = {...newTouched, [key]: false};
     });
 

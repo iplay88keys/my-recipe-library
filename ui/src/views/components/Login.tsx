@@ -57,7 +57,7 @@ let handleSubmit = (values: LoginFormValues, props: FormikHelpers<LoginFormValue
 
     props.setSubmitting(false);
     let newTouched = {} as FormikTouched<LoginFormValues>;
-    Object.keys(values).map(key => {
+    Object.keys(values).forEach(key => {
         newTouched = {...newTouched, [key]: false};
     });
 
