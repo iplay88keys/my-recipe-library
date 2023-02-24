@@ -1,6 +1,5 @@
 import React from "react";
 import { connect } from "react-redux";
-import { ApplicationState } from "../../state/ducks";
 import { registerAsync } from "../../state/ducks/users/actions";
 import Registration from "../components/Registration";
 
@@ -22,10 +21,8 @@ class RegisterPage extends React.Component<AllProps, State> {
     }
 }
 
-const mapStateToProps = ({}: ApplicationState) => ({});
-
 const mapDispatchToProps = {
     register: registerAsync.request
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(RegisterPage);
+export default connect(null, mapDispatchToProps)(RegisterPage);

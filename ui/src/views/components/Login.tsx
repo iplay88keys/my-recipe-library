@@ -43,10 +43,10 @@ const errorMessage = (field: string, formikProps: FormikProps<LoginFormValues>):
     }
 };
 
-let handleSubmit = (values: LoginFormValues, props: FormikHelpers<LoginFormValues>) => {
+const handleSubmit = (values: LoginFormValues, props: FormikHelpers<LoginFormValues>) => {
     const {doLogin} = values;
     if (values.login && values.password) {
-        let user: LoginRequest = {
+        const user: LoginRequest = {
             login: values.login,
             password: values.password
         };
@@ -90,7 +90,6 @@ export const LoginFormInner = (props: FormikProps<LoginFormValues>) => {
                     />
                     <TextField
                         type="password"
-                        name="password"
                         placeholder="Password"
                         variant="outlined"
                         label="Password"

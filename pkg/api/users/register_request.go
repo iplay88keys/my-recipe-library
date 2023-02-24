@@ -3,7 +3,6 @@ package users
 import (
     "fmt"
     "net/mail"
-    "strconv"
     "strings"
     "unicode"
 )
@@ -51,7 +50,10 @@ func (u *RegisterRequest) Validate(usernameExists, emailExists bool) map[string]
     if len(u.Password) == 0 {
         passwordErrors = append(passwordErrors, "Required")
     } else {
-        passwordErrors = append(passwordErrors, u.validatePassword()...)
+        err := u.validatePassword()
+        if err != nil {
+            passwordErrors = append(passwordErrors, err.Error())
+        }
     }
 
     if len(passwordErrors) > 0 {
@@ -95,49 +97,13 @@ func (u *RegisterRequest) validateUsername() []string {
     return errors
 }
 
-func (u *RegisterRequest) validatePassword() []string {
-    var errors []string
-
-    var uppercasePresent, lowercasePresent, numberPresent, specialCharPresent bool
+func (u *RegisterRequest) validatePassword() error {
     const minLength = 6
     const maxLength = 64
-    var passLen int
 
-    for _, ch := range u.Password {
-        switch {
-        case unicode.IsNumber(ch):
-            numberPresent = true
-            passLen++
-        case unicode.IsUpper(ch):
-            uppercasePresent = true
-            passLen++
-        case unicode.IsLower(ch):
-            lowercasePresent = true
-            passLen++
-        case unicode.IsPunct(ch) || unicode.IsSymbol(ch):
-            specialCharPresent = true
-            passLen++
-        default:
-            errors = append(errors, fmt.Sprintf("Invalid character: %s", strconv.QuoteRune(ch)))
-            passLen++
-        }
+    if len(u.Password) < minLength || len(u.Password) > maxLength {
+        return fmt.Errorf("Must be between %d and %d characters long", minLength, maxLength)
     }
 
-    if !lowercasePresent {
-        errors = append(errors, "Lowercase letter missing")
-    }
-    if !uppercasePresent {
-        errors = append(errors, "Uppercase letter missing")
-    }
-    if !numberPresent {
-        errors = append(errors, "Numeric character missing")
-    }
-    if !specialCharPresent {
-        errors = append(errors, "Special character missing")
-    }
-    if passLen < minLength || passLen > maxLength {
-        errors = append(errors, fmt.Sprintf("Must be between %d and %d characters long", minLength, maxLength))
-    }
-
-    return errors
+    return nil
 }

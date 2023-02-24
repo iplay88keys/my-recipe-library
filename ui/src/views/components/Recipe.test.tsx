@@ -2,7 +2,7 @@ import React from "react";
 import Enzyme, { shallow } from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
 import { Ingredient, RecipeResponse, Step } from "../../state/ducks/recipes/types";
-import { Recipe } from "./Recipe";
+import Recipe from "./Recipe";
 
 Enzyme.configure({adapter: new Adapter()});
 

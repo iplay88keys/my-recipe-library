@@ -26,7 +26,7 @@ export function* loginSaga(action: ReturnType<typeof loginAsync.request>): Gener
 
         yield put(loginAsync.success());
 
-        let data = (response.data) as LoginResponse;
+        const data = (response.data) as LoginResponse;
         localStorage.setItem("access_token", data.access_token);
 
         history.push("/recipes");
@@ -40,15 +40,17 @@ export function* loginSaga(action: ReturnType<typeof loginAsync.request>): Gener
 }
 
 export function* logoutSaga(): Generator {
-    let token = localStorage.getItem("access_token") || null;
+    const token = localStorage.getItem("access_token") || null;
 
-    let payload = {
+    const payload = {
         access_token: token
     } as LogoutRequest;
 
     try {
         yield call(Api.post, "/api/v1/users/logout", JSON.stringify(payload));
-    } catch (err) {}
+    } catch (err) {
+        console.log("Error logging out")
+    }
 
     localStorage.removeItem("access_token");
 

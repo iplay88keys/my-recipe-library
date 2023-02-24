@@ -4,7 +4,7 @@ import { RouteComponentProps } from "react-router";
 import { ApplicationState } from "../../state/ducks";
 import { fetchRecipeAsync } from "../../state/ducks/recipes/actions";
 import { RecipeResponse } from "../../state/ducks/recipes/types";
-import { Recipe } from "../components/Recipe";
+import Recipe from "../components/Recipe";
 
 interface PropsFromState {
     recipe: RecipeResponse
@@ -19,6 +19,7 @@ interface MatchParams extends RouteComponentProps<{ recipeID: string }> {}
 
 interface State {
     currentRecipeID: string
+    nextRecipeID: string
 }
 
 type AllProps = PropsFromState & PropsFromDispatch & MatchParams
@@ -31,9 +32,9 @@ class RecipePage extends React.Component<AllProps, State> {
         fetchRecipe(+this.props.match.params.recipeID);
     }
 
-    componentWillReceiveProps(nextProps: AllProps) {
-        if (this.props.match.params.recipeID !== nextProps.match.params.recipeID) {
-            this.props.fetchRecipe(+nextProps.match.params.recipeID);
+    componentDidUpdate(prevProps: AllProps) {
+        if (this.props.match.params.recipeID !== prevProps.match.params.recipeID) {
+            this.props.fetchRecipe(+this.props.match.params.recipeID);
         }
     }
 

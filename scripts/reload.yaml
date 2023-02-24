@@ -1,0 +1,34 @@
+watches:
+  - name: "backend"
+    config:
+      paths:
+        - "pkg"
+      exclusions:
+      recursive: true
+      events:
+        - "create"
+        - "write"
+    onTrigger:
+      - restart: "backend"
+  - name: "frontend"
+    config:
+      paths:
+        - "ui"
+      recursive: true
+      exclusions:
+        - "build"
+        - "node_modules"
+      events:
+        - "create"
+        - "write"
+    onTrigger:
+      - restart: "frontend"
+      - restart: "backend"
+
+processes:
+  - name: "frontend"
+    type: "task"
+    start: "yarn --cwd ui build"
+  - name: "backend"
+    type: "background"
+    start: "go run main.go"

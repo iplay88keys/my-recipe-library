@@ -185,8 +185,8 @@ var _ = Describe("RegisterRequest", func() {
             })
 
             It("returns an error if the password is longer than 64 characters", func() {
-                password := "1aA$"
-                for i := 0; i < 61; i++ {
+                password := ""
+                for i := 0; i < 65; i++ {
                     password = password + "a"
                 }
 
@@ -199,45 +199,6 @@ var _ = Describe("RegisterRequest", func() {
                 errors := req.Validate(false, false)
                 Expect(errors).To(Equal(map[string]string{
                     "password": "Must be between 6 and 64 characters long",
-                }))
-            })
-
-            It("returns an error if the password is missing lower case letters", func() {
-                req := users.RegisterRequest{
-                    Username: "testing",
-                    Email:    "email@example.com",
-                    Password: "123456A$",
-                }
-
-                errors := req.Validate(false, false)
-                Expect(errors).To(Equal(map[string]string{
-                    "password": "Lowercase letter missing",
-                }))
-            })
-
-            It("returns an error if the password is missing upper case letters", func() {
-                req := users.RegisterRequest{
-                    Username: "testing",
-                    Email:    "email@example.com",
-                    Password: "123456a$",
-                }
-
-                errors := req.Validate(false, false)
-                Expect(errors).To(Equal(map[string]string{
-                    "password": "Uppercase letter missing",
-                }))
-            })
-
-            It("returns an error if the password is missing a special character", func() {
-                req := users.RegisterRequest{
-                    Username: "testing",
-                    Email:    "email@example.com",
-                    Password: "123456aA",
-                }
-
-                errors := req.Validate(false, false)
-                Expect(errors).To(Equal(map[string]string{
-                    "password": "Special character missing",
                 }))
             })
         })

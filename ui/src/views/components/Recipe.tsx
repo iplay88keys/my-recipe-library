@@ -1,89 +1,92 @@
+import { Button } from "@material-ui/core";
+import { createStyles, WithStyles, withStyles } from "@material-ui/core/styles";
+import DeleteIcon from "@material-ui/icons/Delete";
+import EditIcon from "@material-ui/icons/Edit";
 import React from "react";
 import { Link } from "react-router-dom";
-import styled from "styled-components";
 import { Ingredient, RecipeResponse, Step } from "../../state/ducks/recipes/types";
 
-const StyledRecipe = styled.div`
-    width: 75%;
-    margin: auto;
-    text-align: center;
-    a {
-        color: rgba(0,0,0,.5);
-    }
-`;
-StyledRecipe.displayName = "StyledRecipe";
-
-const StyledRecipeBreadcrumbs = styled.div`
-    text-align: left;
-    color: rgba(0,0,0,.5);
-    :hover {
-        color: black;
-    }
-`;
-StyledRecipeBreadcrumbs.displayName = "StyledRecipeBreadcrumbs";
-
-const StyledRecipeName = styled.div`
-    margin: auto;
-    font-size: 40px;
-`;
-StyledRecipeName.displayName = "StyledRecipeName";
-
-const StyledRecipeImage = styled.img`
-    max-height: 50vh
-    overflow: auto;
-`;
-StyledRecipeImage.displayName = "StyledRecipeImage";
-
-const StyledRecipeTiming = styled.div`
-    display: flex;
-    justify-content: space-evenly;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    > div {
-        flex-grow: 1;
-        border-top: 4px solid lightgray;
-        border-bottom: 4px solid lightgray;
-        > p {
-            margin: 10px 0 10px 0;
-        }
-    }
-    > div:not(:last-child) {
-        border-right: 4px solid lightgray;
-    }
-`;
-StyledRecipeTiming.displayName = "StyledRecipeTiming";
-
-const StyledRecipeIngredients = styled.div`
-    display: flex;
-    justify-content: space-evenly;
-    li {
-        list-style-type: none;
-        margin-bottom: 5px;
-        text-align: left;
-    }
-`;
-StyledRecipeIngredients.displayName = "StyledRecipeIngredients";
-
-const StyledRecipeSteps = styled.div`
-    margin: auto;
-    text-align: left;
-    li {
-        margin-bottom: 5px;
-    }
-`;
-StyledRecipeSteps.displayName = "StyledRecipeSteps";
-
-const StyledRecipeServings = styled.div`
-    text-align: left;
-`;
-StyledRecipeServings.displayName = "StyledRecipeServings";
-
-interface RecipeProps {
+interface RecipeProps extends WithStyles<typeof styles> {
     recipe: RecipeResponse
     loading: boolean
 }
 
-export const Recipe = ({recipe, loading}: RecipeProps) => {
+const styles = createStyles({
+    top: {
+        display: "flex",
+        justifyContent: "space-evenly"
+    },
+    recipe: {
+        width: "75%",
+        margin: "auto",
+        textAlign: "center",
+        "& a": {
+            color: "rgba(0, 0, 0, .5)"
+        }
+    },
+    breadcrumbs: {
+        textAlign: "left",
+        color: "rgba(0,0,0,.5)",
+        "& :hover": {
+            color: "black"
+        }
+    },
+    name: {
+        margin: "auto",
+        fontSize: "40px"
+    },
+    actions: {
+        textAlign: "right",
+        height: "2em",
+        padding: "5px",
+        margin: "5px",
+        "& span": {
+            padding: "5px"
+        }
+    },
+    image: {
+        maxHeight: "50vh",
+        overflow: "auto"
+    },
+    timing: {
+        display: "flex",
+        justifyContent: "space-evenly",
+        marginTop: "20px",
+        marginBottom: "20px",
+        "& > div": {
+            flexGrow: 1,
+            borderTop: "4px solid lightgray",
+            borderBottom: "4px solid lightgray",
+            "& > p": {
+                margin: "10px 0 10px 0"
+            }
+        },
+        "& > div:not(:last-child)": {
+            borderRight: "4px solid lightgray"
+        }
+    },
+    ingredients: {
+        display: "flex",
+        justifyContent: "space-evenly",
+        "& li": {
+            listStyleType: "none",
+            marginBottom: "5px",
+            textAlign: "left"
+        }
+    },
+    steps: {
+        margin: "auto",
+        textAlign: "left",
+        "& li": {
+            marginBottom: "5px"
+        }
+    },
+    servings: {
+        textAlign: "left"
+    }
+});
+
+function Recipe({recipe, loading, classes}: RecipeProps) {
     if (loading) {
         return (
             <div>
@@ -100,21 +103,39 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
     let leftIngredients = recipe.ingredients;
     let rightIngredients = [] as Ingredient[];
     if (recipe.ingredients != null) {
-        let half = Math.ceil(recipe.ingredients.length / 2);
+        const half = Math.ceil(recipe.ingredients.length / 2);
         leftIngredients = recipe.ingredients.slice(0, half);
         rightIngredients = recipe.ingredients.slice(half, recipe.ingredients.length);
     }
 
     return (
-        <StyledRecipe>
-            <StyledRecipeBreadcrumbs>
-                <Link to="/recipes">Recipes</Link> / <Link to="#cookbook">Cookbook</Link> / <Link
-                to="#section">Section</Link>
-            </StyledRecipeBreadcrumbs>
-            <StyledRecipeName>{recipe.name}</StyledRecipeName>
+        <div className={classes.recipe}>
+            <div className={classes.top}>
+                <div className={classes.breadcrumbs}>
+                    <Link to="/recipes">Recipes</Link> / <Link to="#cookbook">Cookbook</Link> / <Link
+                    to="#section">Section</Link>
+                </div>
+                <div className={classes.name}>{recipe.name}</div>
+                <Button
+                    variant="contained"
+                    color="secondary"
+                    className={classes.actions}
+                    startIcon={<EditIcon/>}
+                >
+                    Edit
+                </Button>
+                <Button
+                    variant="contained"
+                    color="secondary"
+                    className={classes.actions}
+                    startIcon={<DeleteIcon/>}
+                >
+                    Delete
+                </Button>
+            </div>
             {recipe.description != null && <p>{recipe.description}</p>}
             {recipe.source != null && source}
-            <StyledRecipeTiming>
+            <div className={classes.timing}>
                 {recipe.prep_time != null &&
                 <div>
                     <p>Prep: {recipe.prep_time}</p>
@@ -135,12 +156,12 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
                     <p>Total: {recipe.total_time}</p>
                 </div>
                 }
-            </StyledRecipeTiming>
-            <StyledRecipeIngredients>
+            </div>
+            <div className={classes.ingredients}>
                 {ingredientsListElement(leftIngredients)}
                 {ingredientsListElement(rightIngredients)}
-            </StyledRecipeIngredients>
-            <StyledRecipeSteps>
+            </div>
+            <div className={classes.steps}>
                 <ol>
                     {recipe.steps && recipe.steps.map((step: Step) =>
                         <li key={step.step_number}>
@@ -148,11 +169,11 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
                         </li>
                     )}
                 </ol>
-            </StyledRecipeSteps>
-            <StyledRecipeServings>{recipe.servings} Serving{recipe.servings > 1 ? "s" : ""}</StyledRecipeServings>
-        </StyledRecipe>
+            </div>
+            <div className={classes.servings}>{recipe.servings} Serving{recipe.servings > 1 ? "s" : ""}</div>
+        </div>
     );
-};
+}
 
 function formatIngredient(ingredient: Ingredient): string {
     let formattedIngredient = "";
@@ -186,3 +207,5 @@ function ingredientsListElement(ingredients: Ingredient[]): JSX.Element {
         </div>
     );
 }
+
+export default withStyles(styles)(Recipe);

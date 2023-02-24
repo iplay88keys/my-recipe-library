@@ -45,10 +45,10 @@ const errorMessage = (field: string, formikProps: FormikProps<RegistrationFormVa
     }
 };
 
-let handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<RegistrationFormValues>) => {
+const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<RegistrationFormValues>) => {
     const {doRegister} = values;
     if (values.username && values.email && values.password) {
-        let user: RegisterRequest = {
+        const user: RegisterRequest = {
             username: values.username,
             email: values.email,
             password: values.password
@@ -106,7 +106,6 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                     />
                     <TextField
                         type="password"
-                        name="password"
                         placeholder="Password"
                         variant="outlined"
                         label="Password"
@@ -119,7 +118,6 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                     />
                     <TextField
                         type="password"
-                        name="passwordConfirmation"
                         placeholder="Confirm Your Password"
                         variant="outlined"
                         label="Confirm Password"
@@ -170,7 +168,6 @@ export default withFormik<RegistrationFormProps, RegistrationFormValues>({
         password: Yup.string()
                      .min(6, "Must be 6 characters or more")
                      .max(64, "Must be 64 characters or less")
-                     .matches(/[\d\w\W]*/, "Must contain at least one lowercase, uppercase, number, and special character")
                      .required("Required"),
         passwordConfirmation: Yup.mixed()
                                  .test("match", "Passwords do not match",

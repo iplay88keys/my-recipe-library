@@ -1,6 +1,8 @@
+# user: testing pass: testing
+# user: testing2 pass: testing2
 INSERT INTO users (username, email, password_hash)
-VALUES ("user", "email@example.com", PASSWORD("password")),
-       ("user2", "email2@example.com", PASSWORD("password2"));
+VALUES ("testing", "testing@example.com", "$2a$10$.RwFo6HIGMamw.XyYypAHOuBSh6b9bnHZFp1TzzpeILB7Q6GivAWq"),
+       ("testing2", "testing2@example.com", "$2a$10$LohX944X2W.ySt0E0ew5m.cl85SeIOnxErsPR7rUlEsBzrgsv85YG");
 
 INSERT INTO cookbooks (user_id, name)
 VALUES (1, "Favorites"),

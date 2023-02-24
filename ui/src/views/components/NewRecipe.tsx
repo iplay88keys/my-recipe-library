@@ -49,10 +49,10 @@ const errorMessage = (field: string, formikProps: FormikProps<NewRecipeFormValue
     }
 };
 
-let handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeFormValues>) => {
+const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeFormValues>) => {
     const {doCreate} = values;
     if (values.name && values.description && values.servings) {
-        let recipe: RecipeCreateRequest = {
+        const recipe: RecipeCreateRequest = {
             name: values.name,
             description: values.description,
             servings: values.servings,

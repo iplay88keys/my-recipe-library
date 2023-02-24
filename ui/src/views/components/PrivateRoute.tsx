@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Component } from "react";
-import { Redirect, Route } from "react-router";
+import { Redirect, Route, RouteComponentProps } from "react-router";
 
 interface PrivateRouteProps {
     component: React.ComponentType<any>,
@@ -9,7 +8,7 @@ interface PrivateRouteProps {
 }
 
 export const PrivateRoute = ({component: Component, ...rest}: PrivateRouteProps) => (
-    <Route {...rest} render={props => (
+    <Route {...rest} render={(props: RouteComponentProps) => (
         localStorage.getItem("access_token")
             ? <Component {...props} />
             : <Redirect to={{pathname: "/login", state: {from: props.location}}}/>

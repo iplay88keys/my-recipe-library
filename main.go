@@ -10,7 +10,6 @@ import (
     "syscall"
     "time"
 
-    "code.cloudfoundry.org/go-envstruct"
     "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/mysql"
     "github.com/go-redis/redis"
 
@@ -25,17 +24,15 @@ import (
 )
 
 func main() {
-    cfg := config.Config{
-        Port:   "8080",
-        Static: "ui/build",
-    }
-
-    err := envstruct.Load(&cfg)
+    cfg, err := config.Load()
     if err != nil {
         panic(err)
     }
 
-    db, err := connectToMySQL(&config.MySQLCreds{})
+    cfg.Port = "8080"
+    cfg.Static = "ui/build"
+
+    db, err := connectToMySQL(&cfg.MySQLCreds)
     if err != nil {
         panic(err)
     }

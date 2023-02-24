@@ -13,6 +13,7 @@ Built with:
 ## Requirements
 * Docker
 * Go 1.12+
+* [Watchtower](https://github.com/iplay88keys/watchtower) installed on PATH
 
 ## Running
 ```bash

@@ -37,7 +37,7 @@ export function* createRecipeSaga(action: ReturnType<typeof createRecipeAsync.re
     try {
         const response = (yield call(Api.post, "/api/v1/recipes", JSON.stringify(action.payload))) as AxiosResponse;
 
-        let data = (response.data) as RecipeCreateResponse;
+        const data = (response.data) as RecipeCreateResponse;
         yield put(createRecipeAsync.success(data.recipe_id));
     } catch (err) {
         if (err.response && err.response.status === 401) {
