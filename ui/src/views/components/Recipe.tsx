@@ -93,13 +93,13 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
     }
 
     let source: JSX.Element = <p>Source: {recipe.source}</p>;
-    if (recipe.source != null && recipe.source.includes("http")) {
+    if (recipe.source?.includes("http")) {
         source = <p>Source: <a href={recipe.source}>Link</a></p>;
     }
 
     let leftIngredients = recipe.ingredients;
     let rightIngredients = [] as Ingredient[];
-    if (recipe.ingredients != null) {
+    if (recipe.ingredients) {
         let half = Math.ceil(recipe.ingredients.length / 2);
         leftIngredients = recipe.ingredients.slice(0, half);
         rightIngredients = recipe.ingredients.slice(half, recipe.ingredients.length);
@@ -112,25 +112,25 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
                 to="#section">Section</Link>
             </StyledRecipeBreadcrumbs>
             <StyledRecipeName>{recipe.name}</StyledRecipeName>
-            {recipe.description != null && <p>{recipe.description}</p>}
-            {recipe.source != null && source}
+            {recipe.description && <p>{recipe.description}</p>}
+            {recipe.source && source}
             <StyledRecipeTiming>
-                {recipe.prep_time != null &&
+                {recipe.prep_time &&
                 <div>
                     <p>Prep: {recipe.prep_time}</p>
                 </div>
                 }
-                {recipe.cook_time != null &&
+                {recipe.cook_time &&
                 <div>
                     <p>Cook: {recipe.cook_time}</p>
                 </div>
                 }
-                {recipe.cool_time != null &&
+                {recipe.cool_time &&
                 <div>
                     <p>Cool: {recipe.cool_time}</p>
                 </div>
                 }
-                {recipe.total_time != null &&
+                {recipe.total_time &&
                 <div>
                     <p>Total: {recipe.total_time}</p>
                 </div>
@@ -156,17 +156,17 @@ export const Recipe = ({recipe, loading}: RecipeProps) => {
 
 function formatIngredient(ingredient: Ingredient): string {
     let formattedIngredient = "";
-    if (ingredient.amount != null) {
+    if (ingredient.amount) {
         formattedIngredient += `${ingredient.amount} `;
     }
 
-    if (ingredient.measurement != null) {
+    if (ingredient.measurement) {
         formattedIngredient += `${ingredient.measurement} `;
     }
 
     formattedIngredient += `${ingredient.ingredient}`;
 
-    if (ingredient.preparation != null) {
+    if (ingredient.preparation) {
         formattedIngredient += `, ${ingredient.preparation}`;
     }
 

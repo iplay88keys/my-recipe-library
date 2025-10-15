@@ -56,11 +56,11 @@ let handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeF
             name: values.name,
             description: values.description,
             servings: values.servings,
-            prep_time: values.prep_time ? values.prep_time : undefined,
-            cook_time: values.cook_time ? values.cook_time : undefined,
-            cool_time: values.cool_time ? values.cool_time : undefined,
-            total_time: values.total_time ? values.total_time : undefined,
-            source: values.source ? values.source : undefined
+            prep_time: values.prep_time || undefined,
+            cook_time: values.cook_time || undefined,
+            cool_time: values.cool_time || undefined,
+            total_time: values.total_time || undefined,
+            source: values.source || undefined
         };
 
         props.setStatus({});
