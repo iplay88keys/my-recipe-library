@@ -37,14 +37,20 @@ type getStepsForRecipe func(recipeID int64) ([]*repositories.Step, error)
 
 func GetRecipe(getRecipe getRecipe, getIngredientsForRecipe getIngredientsForRecipe, getStepsForRecipe getStepsForRecipe) *api.Endpoint {
 	return &api.Endpoint{
-		Path:   "recipes/{id:[0-9]+}",
+		Path:   "recipes/{id}",
 		Method: http.MethodGet,
 		Auth:   true,
 		Handle: func(r *api.Request) *api.Response {
-			recipeID, err := strconv.ParseInt(r.Vars["id"], 10, 64)
+			idStr := r.Req.PathValue("id")
+			if idStr == "" {
+				fmt.Printf("Recipe endpoint missing id\n")
+				return api.NewResponse(http.StatusBadRequest, nil)
+			}
+
+			recipeID, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
-				fmt.Printf("RecipeResponse endpoint missing id: %s\n", err.Error())
-				return api.NewResponse(http.StatusInternalServerError, nil)
+				fmt.Printf("Recipe endpoint invalid id: %s\n", err.Error())
+				return api.NewResponse(http.StatusBadRequest, nil)
 			}
 
 			recipe, err := getRecipe(recipeID, r.UserID)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
 
@@ -59,13 +60,12 @@ var _ = Describe("GetRecipe", func() {
 			}}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -135,13 +135,12 @@ var _ = Describe("GetRecipe", func() {
 			return []*repositories.Step{}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -192,13 +191,12 @@ var _ = Describe("GetRecipe", func() {
 			}}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -233,13 +231,12 @@ var _ = Describe("GetRecipe", func() {
 			return []*repositories.Step{}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
@@ -258,13 +255,12 @@ var _ = Describe("GetRecipe", func() {
 			return []*repositories.Step{}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
@@ -283,13 +279,12 @@ var _ = Describe("GetRecipe", func() {
 			return []*repositories.Step{}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
@@ -308,13 +303,12 @@ var _ = Describe("GetRecipe", func() {
 			return nil, errors.New("some error")
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/1", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
+		req.SetPathValue("id", "1")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "1"},
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
@@ -333,15 +327,14 @@ var _ = Describe("GetRecipe", func() {
 			return []*repositories.Step{}, nil
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "/recipes/not-a-number", nil)
-		Expect(err).ToNot(HaveOccurred())
+		req := httptest.NewRequest(http.MethodGet, "/recipes/not-a-number", nil)
+		req.SetPathValue("id", "not-a-number")
 
 		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
-			Vars:   map[string]string{"id": "not-a-number"},
 		})
 
-		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 	})
 })

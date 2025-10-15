@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"github.com/iplay88keys/my-recipe-library/pkg/token"
 )
 
@@ -41,22 +39,26 @@ func New(config *Config) *API {
 
 	fmt.Println("Registering endpoints:")
 
-	r := mux.NewRouter()
+	mux := http.NewServeMux()
 
-	api := r.PathPrefix("/api/v1").Subrouter()
+	// Register API endpoints
 	for _, endpoint := range config.Endpoints {
-		fmt.Printf("%s /api/v1/%s\n", endpoint.Method, endpoint.Path)
-		api.HandleFunc(fmt.Sprintf("/%s", endpoint.Path), server.handleEndpoint(endpoint)).Methods(endpoint.Method)
+		pattern := fmt.Sprintf("%s /api/v1/%s", endpoint.Method, endpoint.Path)
+		fmt.Printf("%s %s\n", endpoint.Method, pattern)
+		mux.Handle(pattern, server.createHandler(endpoint))
 	}
-	api.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
+	// Handle API 404s
+	mux.Handle("/api/v1/", http.HandlerFunc(notFoundHandler))
+
+	// SPA handler for all other routes
 	spa := spaHandler{
 		staticPath: config.StaticDir,
 		indexPath:  "index.html",
 	}
-	r.PathPrefix("/").Handler(spa)
+	mux.Handle("/", spa)
 
-	server.Server.Handler = r
+	server.Server.Handler = mux
 
 	return server
 }
@@ -69,8 +71,8 @@ func (a *API) Start() (shutdown func()) {
 	}
 }
 
-func (a *API) handleEndpoint(e *Endpoint) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (a *API) createHandler(e *Endpoint) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := &Response{}
 		valid := true
 		userID := int64(-1)
@@ -86,7 +88,6 @@ func (a *API) handleEndpoint(e *Endpoint) http.HandlerFunc {
 		}
 
 		if valid {
-			req.Vars = mux.Vars(r)
 			req.UserID = userID
 
 			resp = e.Handle(req)
@@ -95,9 +96,8 @@ func (a *API) handleEndpoint(e *Endpoint) http.HandlerFunc {
 		}
 
 		writeResponse(w, resp)
-
 		logRequest(startTime, time.Now(), req, resp)
-	}
+	})
 }
 
 func writeResponse(w http.ResponseWriter, resp *Response) {

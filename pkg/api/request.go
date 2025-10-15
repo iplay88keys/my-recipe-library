@@ -8,7 +8,6 @@ import (
 type Request struct {
 	Req    *http.Request
 	UserID int64
-	Vars   map[string]string
 }
 
 func (r *Request) Decode(out interface{}) error {

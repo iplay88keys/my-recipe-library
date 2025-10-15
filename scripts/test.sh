@@ -44,26 +44,20 @@ if [[ "${skipUI}" = "false" ]]; then
 fi
 
 if [[ "${skipIntegration}" = "false" ]]; then
-    exit_code=1
-    set +e
-    echo "Checking to see if mysql is available"
-    podman exec db_db_1 mysqladmin -u "${DATABASE_USERNAME}" \
-        -p"${DATABASE_PASSWORD}" ping  > /dev/null 2>&1
+    echo "Setting up database for testing..."
 
-    exit_code=$?
-    set -e
+    # Always stop any existing containers first to ensure clean state
+    "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
 
-    if [[ "${exit_code}" -eq 1 ]]; then
-        echo "mysql is not running, starting it for testing"
-        "${root_dir}/scripts/start_database.sh" > /dev/null 2>&1
+    # Start fresh database
+    echo "Starting database for testing"
+    "${root_dir}/scripts/start_database.sh" > /dev/null 2>&1
 
-        function finish {
-          "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
-        }
-        trap finish EXIT
-    else
-        "${root_dir}/scripts/clean_database.sh"
-    fi
+    function finish {
+      echo "Cleaning up database after tests"
+      "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
+    }
+    trap finish EXIT
 
     "${root_dir}/scripts/migrate_database.sh"
 fi

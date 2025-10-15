@@ -12,6 +12,8 @@ type spaHandler struct {
 	indexPath  string
 }
 
+// SPA handler for serving single page applications
+// originally using gorilla mux:
 // https://github.com/gorilla/mux/tree/75dcda0896e109a2a22c9315bca3bb21b87b2ba5#serving-single-page-applications
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path, err := filepath.Abs(r.URL.Path)
