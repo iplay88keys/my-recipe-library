@@ -1,6 +1,6 @@
 module github.com/iplay88keys/my-recipe-library
 
-go 1.19
+go 1.25
 
 require (
 	cloud.google.com/go/cloudsqlconn v1.2.0

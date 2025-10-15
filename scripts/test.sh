@@ -47,10 +47,8 @@ if [[ "${skipIntegration}" = "false" ]]; then
     exit_code=1
     set +e
     echo "Checking to see if mysql is available"
-    mysqladmin -u "${DATABASE_USERNAME}" \
-        -p"${DATABASE_PASSWORD}" \
-        -h "${DATABASE_HOST}" \
-        -P "${DATABASE_PORT}" ping  > /dev/null 2>&1
+    podman exec db_db_1 mysqladmin -u "${DATABASE_USERNAME}" \
+        -p"${DATABASE_PASSWORD}" ping  > /dev/null 2>&1
 
     exit_code=$?
     set -e
