@@ -5,35 +5,71 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type spaHandler struct {
 	staticPath string
 	indexPath  string
+	root       *os.Root
 }
 
-// SPA handler for serving single page applications
-// originally using gorilla mux:
-// https://github.com/gorilla/mux/tree/75dcda0896e109a2a22c9315bca3bb21b87b2ba5#serving-single-page-applications
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path, err := filepath.Abs(r.URL.Path)
+func NewSPAHandler(staticPath, indexPath string) (*spaHandler, error) {
+	root, err := os.OpenRoot(staticPath)
 	if err != nil {
-		fmt.Printf("Spa file not found for '%s': %s\n", r.URL.Path, err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, fmt.Errorf("failed to open root directory %s: %w", staticPath, err)
+	}
+
+	return &spaHandler{
+		staticPath: staticPath,
+		indexPath:  indexPath,
+		root:       root,
+	}, nil
+}
+
+func (h *spaHandler) Close() error {
+	if h.root != nil {
+		return h.root.Close()
+	}
+	return nil
+}
+
+// Serves static files or falls back to index.html for SPA routing
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Clean path and remove leading slash
+	cleanPath := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
+
+	// Try to serve the requested file
+	fileInfo, err := h.root.Stat(cleanPath)
+	if err == nil {
+		file, err := h.root.Open(cleanPath)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+
+			return
+		}
+		defer file.Close()
+
+		http.ServeContent(w, r, cleanPath, fileInfo.ModTime(), file)
+
 		return
 	}
 
-	path = filepath.Join(h.staticPath, path)
+	file, err := h.root.Open(h.indexPath)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
 		return
-	} else if err != nil {
-		fmt.Printf("Spa Handle error: %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	defer file.Close()
+
+	info, err := h.root.Stat(h.indexPath)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+
 		return
 	}
 
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+	// Fallback to serving the index.html for SPA routing
+	http.ServeContent(w, r, h.indexPath, info.ModTime(), file)
 }

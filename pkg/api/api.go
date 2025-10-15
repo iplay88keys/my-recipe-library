@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -52,10 +53,11 @@ func New(config *Config) *API {
 	mux.Handle("/api/v1/", http.HandlerFunc(notFoundHandler))
 
 	// SPA handler for all other routes
-	spa := spaHandler{
-		staticPath: config.StaticDir,
-		indexPath:  "index.html",
+	spa, err := NewSPAHandler("config.StaticDir", "index.html")
+	if err != nil {
+		log.Fatalf("Unable to create SPA handler: %s", err)
 	}
+
 	mux.Handle("/", spa)
 
 	server.Server.Handler = mux
