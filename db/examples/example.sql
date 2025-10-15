@@ -1,6 +1,9 @@
+-- password_hash values are bcrypt hashes of:
+-- user: "password"
+-- user2: "password2"
 INSERT INTO users (username, email, password_hash)
-VALUES ("user", "email@example.com", PASSWORD("password")),
-       ("user2", "email2@example.com", PASSWORD("password2"));
+VALUES ("user", "email@example.com", "$2a$10$OrHtjl4.k1bvqakWLJPkb.SoPQfhs70NI1TvgkAncJb4DfUGdeTFa"),
+       ("user2", "email2@example.com", "$2a$10$YQ2GjqrcCthWQTtI7Fke3uXhS9Nl0Bf.EA7.gwcLACChiF9Tuoj1m");
 
 INSERT INTO cookbooks (user_id, name)
 VALUES (1, "Favorites"),

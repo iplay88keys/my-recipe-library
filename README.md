@@ -11,7 +11,7 @@ Built with:
 
 # Local Development
 ## Requirements
-* Docker
+* Podman
 * Go 1.19+
 * Node
 * Yarn

@@ -2,13 +2,6 @@
 
 root_dir="$(git rev-parse --show-toplevel)"
 
-docker info > /dev/null 2>&1
-exit_code=$?
-if [[ "${exit_code}" -ne 0 ]]; then
-    echo "Could not reach docker daemon Is docker installed and running?"
-    exit 1
-fi
-
 set -e
 
 echo "Stopping the database if currently running"
@@ -16,7 +9,7 @@ echo "Stopping the database if currently running"
 
 pushd "${root_dir}/db"
     echo "Bringing up the new database"
-    docker-compose up & > /dev/null 2>&1
+    podman-compose up & > /dev/null 2>&1
 popd
 
 exit_code=1

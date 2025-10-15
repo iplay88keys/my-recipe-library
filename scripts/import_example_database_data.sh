@@ -6,7 +6,7 @@ root_dir="$(git rev-parse --show-toplevel)"
 
 source "${root_dir}/scripts/dev_db_creds.sh"
 
-pushd migrations
+pushd "${root_dir}/db"
     echo "Importing example data into the database"
     mysql -u "${DATABASE_USERNAME}" \
         -p"${DATABASE_PASSWORD}" \
