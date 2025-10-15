@@ -31,20 +31,41 @@ if [[ "${buildUI}" = "true" ]]; then
     popd
 fi
 
-#echo "Restarting the database"
-#"${root_dir}/scripts/start_database.sh"
-#
-#echo "Migrating the database"
-#"${root_dir}/scripts/migrate_database.sh"
+echo "Checking database container status..."
+container_running=false
+set +e
+if podman ps --format "{{.Names}}" | grep -q "db_db_1"; then
+    container_running=true
+    echo "Database container is running, checking MySQL availability..."
+    podman exec db_db_1 mysqladmin -u "${DATABASE_USERNAME}" \
+        -p"${DATABASE_PASSWORD}" ping  > /dev/null 2>&1
+    mysql_available=$?
+else
+    echo "Database container is not running"
+    mysql_available=1
+fi
+set -e
 
-#echo "Importing example data"
-#"${root_dir}/scripts/import_example_database_data.sh"
-#
-#function finish {
-#    echo "Stopping the database"
-#    "${root_dir}/scripts/stop_database.sh"
-#}
-#trap finish EXIT
+if [[ "${mysql_available}" -eq 1 ]]; then
+    echo "MySQL is not available, starting database..."
+
+    "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
+    "${root_dir}/scripts/start_database.sh" > /dev/null 2>&1
+else
+    echo "MySQL is available, cleaning database..."
+    "${root_dir}/scripts/clean_database.sh"
+fi
+
+function finish {
+    "${root_dir}/scripts/stop_database.sh" > /dev/null 2>&1
+}
+trap finish EXIT
+
+echo "Migrating the database"
+"${root_dir}/scripts/migrate_database.sh"
+
+echo "Importing example data"
+"${root_dir}/scripts/import_example_database_data.sh"
 
 echo "Exporting env vars"
 mysql_url="mysql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@tcp(${DATABASE_HOST}:${DATABASE_PORT})/${DATABASE_NAME}"

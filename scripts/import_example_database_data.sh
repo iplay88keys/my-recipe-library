@@ -8,9 +8,7 @@ source "${root_dir}/scripts/dev_db_creds.sh"
 
 pushd "${root_dir}/db"
     echo "Importing example data into the database"
-    mysql -u "${DATABASE_USERNAME}" \
+    podman exec -i db_db_1 mysql -u "${DATABASE_USERNAME}" \
         -p"${DATABASE_PASSWORD}" \
-        -h "${DATABASE_HOST}" \
-        -P "${DATABASE_PORT}" \
         -D "${DATABASE_NAME}" < examples/example.sql
 popd
