@@ -64,7 +64,7 @@ const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecip
         };
 
         props.setStatus({});
-        doCreate(recipe, props.setStatus);
+        void doCreate(recipe, props.setStatus);
     }
 
     props.setSubmitting(false);
@@ -73,7 +73,7 @@ const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecip
         newTouched = {...newTouched, [key]: false};
     });
 
-    props.setTouched(newTouched);
+    void props.setTouched(newTouched);
 };
 
 export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {

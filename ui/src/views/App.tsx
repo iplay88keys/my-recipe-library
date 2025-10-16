@@ -1,4 +1,5 @@
-import { createMuiTheme, CssBaseline } from "@material-ui/core";
+import { CssBaseline } from "@material-ui/core";
+import { createTheme } from '@material-ui/core/styles'
 import { ThemeProvider } from "@material-ui/styles";
 import React from "react";
 import { connect } from "react-redux";
@@ -41,7 +42,7 @@ class App extends React.Component<AllProps, State> {
     // }
 
     render() {
-        const theme = createMuiTheme({
+        const theme = createTheme({
             palette: {
                 type: "light"
             }

@@ -55,7 +55,7 @@ const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<Regis
         };
 
         props.setStatus({});
-        doRegister(user, props.setStatus);
+        void doRegister(user, props.setStatus);
     }
 
     props.setSubmitting(false);
@@ -64,7 +64,7 @@ const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<Regis
         newTouched = {...newTouched, [key]: false};
     });
 
-    props.setTouched(newTouched);
+    void props.setTouched(newTouched);
 };
 
 export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>) => {

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export default class Api {
-    static async get(url: string, auth: boolean = true) {
+    static async get(url: string, auth = true) {
         const token = localStorage.getItem("access_token") ?? null;
 
         const config = {
@@ -18,7 +18,7 @@ export default class Api {
         }).get(url, config);
     }
 
-    static async post(url: string, body: string, auth: boolean = true) {
+    static async post(url: string, body: string, auth = true) {
         const token = localStorage.getItem("access_token") ?? null;
 
         const config = {

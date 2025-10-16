@@ -1,6 +1,6 @@
 import { Button, Container, CssBaseline, TextField, Typography } from "@material-ui/core";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import { FormikBag, FormikHelpers, FormikProps, FormikTouched, withFormik } from "formik";
+import { FormikBag, FormikProps, FormikTouched, withFormik } from "formik";
 import React from "react";
 import * as Yup from "yup";
 import { loginAsync } from "../../state/ducks/users/actions";
@@ -37,7 +37,7 @@ const handleSubmit = (values: LoginFormValues, props: FormikBag<LoginFormProps, 
         };
 
         props.setStatus({});
-        doLogin(request, props.setStatus);
+        void doLogin(request, props.setStatus);
     }
 
     props.setSubmitting(false);
@@ -46,12 +46,11 @@ const handleSubmit = (values: LoginFormValues, props: FormikBag<LoginFormProps, 
         newTouched = {...newTouched, [key]: false};
     });
 
-    props.setTouched(newTouched);
+    void props.setTouched(newTouched);
 };
 
 export const LoginFormInner = (props: FormikProps<LoginFormValues>) => {
     const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
-    console.log(errors.login);
 
     const classes = useStyles();
 
