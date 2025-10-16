@@ -30,20 +30,30 @@ export interface RegistrationFormValues {
     doRegister: typeof registerAsync.request
 }
 
-// const showError = (field: string, formikProps: FormikProps<RegistrationFormValues>): boolean => {
-//     return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
-//         (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
-// };
-//
-// const errorMessage = (field: string, formikProps: FormikProps<RegistrationFormValues>): string => {
-//     if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
-//         return getIn(formikProps.status, field);
-//     } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
-//         return getIn(formikProps.errors, field);
-//     } else {
-//         return "";
-//     }
-// };
+const showError = (field: string, formikProps: FormikProps<RegistrationFormValues>): boolean => {
+    const status = formikProps.status as RegistrationFormValues | undefined;
+
+    const fieldTouched = !!formikProps.touched[field as keyof RegistrationFormValues];
+    const hasFormikError = Boolean(formikProps.errors[field as keyof RegistrationFormValues]);
+    const hasStatusError = !!(status && status[field as keyof RegistrationFormValues]);
+
+    return (fieldTouched && hasFormikError) || (!fieldTouched && hasStatusError)
+};
+
+const errorMessage = (field: string, formikProps: FormikProps<RegistrationFormValues>): string => {
+    const status = formikProps.status as RegistrationFormValues | undefined;
+    const fieldTouched = !!formikProps.touched[field as keyof RegistrationFormValues];
+    const formikError = formikProps.errors[field as keyof RegistrationFormValues];
+    const statusError = status && status[field as keyof RegistrationFormValues];
+
+    if (!fieldTouched && typeof statusError == "string" && Boolean(statusError)) {
+        return statusError
+    } else if (fieldTouched && typeof formikError == "string" && Boolean(formikError)) {
+        return formikError
+    } else {
+        return ""
+    }
+};
 
 const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<RegistrationFormValues>) => {
     const {doRegister} = values;
@@ -68,7 +78,7 @@ const handleSubmit = (values: RegistrationFormValues, props: FormikHelpers<Regis
 };
 
 export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>) => {
-    const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
+    const {handleSubmit, getFieldProps, isSubmitting} = props;
 
     const classes = useStyles();
 
@@ -86,8 +96,8 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Username"
                         margin="normal"
-                        error={touched.username && Boolean(errors.username)}
-                        helperText={touched.username && errors.username}
+                        error={showError("username", props)}
+                        helperText={errorMessage("username", props)}
                         {...getFieldProps("username")}
                         required
                         fullWidth
@@ -98,8 +108,8 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Email"
                         margin="normal"
-                        error={touched.email && Boolean(errors.email)}
-                        helperText={touched.email && errors.email}
+                        error={showError("email", props)}
+                        helperText={errorMessage("email", props)}
                         {...getFieldProps("email")}
                         required
                         fullWidth
@@ -110,8 +120,8 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Password"
                         margin="normal"
-                        error={touched.password && Boolean(errors.password)}
-                        helperText={touched.password && errors.password}
+                        error={showError("password", props)}
+                        helperText={errorMessage("password", props)}
                         {...getFieldProps("password")}
                         required
                         fullWidth
@@ -122,8 +132,8 @@ export const RegistrationFormInner = (props: FormikProps<RegistrationFormValues>
                         variant="outlined"
                         label="Confirm Password"
                         margin="normal"
-                        error={touched.passwordConfirmation && Boolean(errors.passwordConfirmation)}
-                        helperText={touched.passwordConfirmation && errors.passwordConfirmation}
+                        error={showError("passwordConfirmation", props)}
+                        helperText={errorMessage("passwordConfirmation", props)}
                         {...getFieldProps("passwordConfirmation")}
                         required
                         fullWidth

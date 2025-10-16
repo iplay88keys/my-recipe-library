@@ -1,391 +1,151 @@
-import { act, render } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from '@testing-library/user-event'
+import { FormikErrors } from "formik";
 import React from "react";
+import { createRecipeAsync } from "../../state/ducks/recipes/actions";
+import { RecipeCreateRequest } from "../../state/ducks/recipes/types";
 import { registerAsync } from "../../state/ducks/users/actions";
+import NewRecipe, { NewRecipeFormValues } from "./NewRecipe";
 import Registration from "./Registration";
 
 describe("NewRecipe", () => {
-    it("should render a form for creating a new recipe", () => {
-        const register = jest.fn(registerAsync.request);
+    it("should render a form for creating a new recipe", async () => {
+        const create = jest.fn(createRecipeAsync.request);
 
         render(
-            <Registration
-                register={register}
+            <NewRecipe
+                create={create}
             />
         );
 
-        // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).text()).toEqual("Usernamef*Username*");
-        // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).text()).toEqual("Email*Email*");
-        // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).text()).toEqual("Password*Password*");
-        // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).text())
-        //     .toEqual("Confirm Password*Confirm Password*");
+        const user = userEvent.setup()
+
+        await user.type(screen.getByPlaceholderText("Name"), "test-name")
+        await user.type(screen.getByPlaceholderText("Description"), "test-description")
+        await user.type(screen.getByPlaceholderText("Servings"), "1")
+        await user.type(screen.getByPlaceholderText("Prep Time"), "1m")
+        await user.type(screen.getByPlaceholderText("Cook Time"), "2m")
+        await user.type(screen.getByPlaceholderText("Cool Time"), "3m")
+        await user.type(screen.getByPlaceholderText("Total Time"), "6m")
+        await user.type(screen.getByPlaceholderText("Source"), "test-source")
+
+        const submitButton = screen.getByRole("button")
+        expect(submitButton).toHaveTextContent("Create");
+        await user.click(submitButton)
+
+        expect(create).toHaveBeenCalledWith({
+            "name": "test-name",
+            "description": "test-description",
+            "servings": 1,
+            "prep_time": "1m",
+            "cook_time": "2m",
+            "cool_time": "3m",
+            "total_time": "6m",
+            "source": "test-source",
+        }, expect.any(Function))
     });
 
     describe("form validation errors", () => {
-        beforeEach(() => {
-            const register = jest.fn(registerAsync.request);
-
-            render(
-                <Registration
-                    register={register}
-                />
-            );
-
-        });
-
-        describe("username", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onBlur!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username"
-                    //     }
-                    // } as FocusEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.update();
-                });
-            });
-
-            it("allows valid input", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username",
-                    //         value: "valid_Username"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value)
-                //     .toEqual("valid_Username");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(false);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-                //     .toEqual("");
-            });
-
+        describe("name", () => {
             it("is required", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username",
-                    //         value: ""
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                const create = jest.fn(createRecipeAsync.request);
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value).toEqual("");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-                //     .toEqual("Required");
-            });
+                render(
+                    <NewRecipe
+                        create={create}
+                    />
+                );
 
-            it("validates length", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username",
-                    //         value: "ian"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                const user = userEvent.setup()
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value).toEqual("ian");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-                //     .toEqual("Must be 6 characters or more");
+                expect(screen.queryByText("Required")).not.toBeInTheDocument();
 
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username",
-                    //         value: "this username is more than 30 characters long"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                await user.type(screen.getByPlaceholderText("Description"), "test-description")
+                await user.type(screen.getByPlaceholderText("Servings"), "1")
+                await user.type(screen.getByPlaceholderText("Prep Time"), "1m")
+                await user.type(screen.getByPlaceholderText("Cook Time"), "2m")
+                await user.type(screen.getByPlaceholderText("Cool Time"), "3m")
+                await user.type(screen.getByPlaceholderText("Total Time"), "6m")
+                await user.type(screen.getByPlaceholderText("Source"), "test-source")
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value)
-                //     .toEqual("this username is more than 30 characters long");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-                //     .toEqual("Must be 30 characters or less");
-            });
+                const submitButton = screen.getByRole("button")
+                expect(submitButton).toHaveTextContent("Create");
+                await user.click(submitButton)
 
-            it("must match the regex", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "username",
-                    //         value: "&invalid User"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value)
-                //     .toEqual("&invalid User");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-                //     .toEqual("Must start with a letter and only contain alphanumeric characters and underscores (_)");
+                const nameSection = screen.getByTestId("nameSection")
+                expect(within(nameSection).getByText("Required")).toBeInTheDocument()
             });
         });
 
-        describe("email", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().onBlur!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "email"
-                    //     }
-                    // } as FocusEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.update();
-                });
-            });
-
-            it("allows valid input", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "email",
-                    //         value: "valid@example.com"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().value)
-                //     .toEqual("valid@example.com");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().error).toEqual(false);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().helperText)
-                //     .toEqual("");
-            });
-
+        describe("description", () => {
             it("is required", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "email",
-                    //         value: ""
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                const create = jest.fn(createRecipeAsync.request);
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().value).toEqual("");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().helperText)
-                //     .toEqual("Required");
-            });
+                render(
+                    <NewRecipe
+                        create={create}
+                    />
+                );
 
-            it("validates email", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "email",
-                    //         value: "invalid"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                const user = userEvent.setup()
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().value)
-                //     .toEqual("invalid");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(1).props().helperText)
-                //     .toEqual("Must be a valid email");
-            });
-        });
+                expect(screen.queryByText("Required")).not.toBeInTheDocument();
 
-        describe("password", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onBlur!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password"
-                    //     }
-                    // } as FocusEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.update();
-                });
-            });
+                await user.type(screen.getByPlaceholderText("Name"), "test-name")
+                await user.type(screen.getByPlaceholderText("Servings"), "1")
+                await user.type(screen.getByPlaceholderText("Prep Time"), "1m")
+                await user.type(screen.getByPlaceholderText("Cook Time"), "2m")
+                await user.type(screen.getByPlaceholderText("Cool Time"), "3m")
+                await user.type(screen.getByPlaceholderText("Total Time"), "6m")
+                await user.type(screen.getByPlaceholderText("Source"), "test-source")
 
-            it("allows valid input", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password",
-                    //         value: "Pa3$word123"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
+                const submitButton = screen.getByRole("button")
+                expect(submitButton).toHaveTextContent("Create");
+                await user.click(submitButton)
 
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().value)
-                //     .toEqual("Pa3$word123");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().error).toEqual(false);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().helperText)
-                //     .toEqual("");
-            });
-
-            it("is required", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password",
-                    //         value: ""
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().value).toEqual("");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().helperText)
-                //     .toEqual("Required");
-            });
-
-            it("validates length", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password",
-                    //         value: "short"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().value).toEqual("short");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().helperText)
-                //     .toEqual("Must be 6 characters or more");
-
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password",
-                    //         value: "this password is more than 64 characters long which is too long for this field"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().value)
-                //     .toEqual("this password is more than 64 characters long which is too long for this field");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().helperText)
-                //     .toEqual("Must be 64 characters or less");
-            });
-        });
-
-        describe("password confirmation", () => {
-            beforeEach(async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onBlur!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password"
-                    //     }
-                    // } as FocusEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(2).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "password",
-                    //         value: "Pa3$word123"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().onBlur!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "passwordConfirmation"
-                    //     }
-                    // } as FocusEvent<HTMLInputElement>);
-                    //
-                    // enzymeWrapper.update();
-                });
-            });
-
-            it("allows valid input when matching the password field", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "passwordConfirmation",
-                    //         value: "Pa3$word123"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().value)
-                //     .toEqual("Pa3$word123");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().error).toEqual(false);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().helperText)
-                //     .toEqual("");
-            });
-
-            it("has to match the password field", async () => {
-                await act(async () => {
-                    // enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().onChange!({
-                    //     preventDefault() {},
-                    //     target: {
-                    //         name: "passwordConfirmation",
-                    //         value: "doesNotMatch"
-                    //     }
-                    // } as ChangeEvent<HTMLInputElement>);
-                });
-
-                // enzymeWrapper.update();
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().value)
-                //     .toEqual("doesNotMatch");
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().error).toEqual(true);
-                // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(3).props().helperText)
-                //     .toEqual("Passwords do not match");
+                const descriptionSection = screen.getByTestId("descriptionSection")
+                expect(within(descriptionSection).getByText("Required")).toBeInTheDocument()
             });
         });
     });
 
     describe("api validation errors", () => {
-        it("displays username errors", async () => {
-            const register = jest.fn(registerAsync.request);
+        it("displays errors", async () => {
+            const create = jest.fn(createRecipeAsync.request);
+            create.mockImplementation((payload: RecipeCreateRequest, meta: (errors: FormikErrors<NewRecipeFormValues>) => void): any => {
+                meta({
+                    name: "error 1",
+                    description: "error 2",
+                    servings: "error 3"
+                } as FormikErrors<NewRecipeFormValues>);
+            });
 
             render(
-                <Registration
-                    register={register}
+                <NewRecipe
+                    create={create}
                 />
             );
 
-            await act(async () => {
-                // enzymeWrapper.find(RegistrationFormInner).props().setStatus({"username": "Api Error"});
-            });
+            const user = userEvent.setup()
 
-            // enzymeWrapper.update();
-            // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().value)
-            //     .toEqual("");
-            // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().error).toEqual(true);
-            // expect(enzymeWrapper.find(RegistrationFormInner).find(TextField).at(0).props().helperText)
-            //     .toEqual("Api Error");
+            await user.type(screen.getByPlaceholderText("Name"), "test-name")
+            await user.type(screen.getByPlaceholderText("Description"), "test-description")
+            await user.type(screen.getByPlaceholderText("Servings"), "1")
+
+            const submitButton = screen.getByRole("button")
+            expect(submitButton).toHaveTextContent("Create");
+            await user.click(submitButton)
+
+            const nameSection = screen.getByTestId("nameSection");
+            expect(within(nameSection).getByText("error 1")).toBeInTheDocument();
+
+            const descriptionSection = screen.getByTestId("descriptionSection");
+            expect(within(descriptionSection).getByText("error 2")).toBeInTheDocument();
+
+            const servingsSection = screen.getByTestId("servingsSection");
+            expect(within(servingsSection).getByText("error 3")).toBeInTheDocument();
         });
+
 
         it("displays email errors", async () => {
             const register = jest.fn(registerAsync.request);

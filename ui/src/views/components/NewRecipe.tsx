@@ -1,6 +1,6 @@
 import { Button, Container, CssBaseline, TextField, Typography } from "@material-ui/core";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import { FormikHelpers, FormikProps, FormikTouched, withFormik } from "formik";
+import { FormikBag, FormikProps, FormikTouched, withFormik } from "formik";
 import React from "react";
 import * as Yup from "yup";
 import { createRecipeAsync } from "../../state/ducks/recipes/actions";
@@ -34,22 +34,7 @@ export interface NewRecipeFormValues {
     doCreate: typeof createRecipeAsync.request
 }
 
-// const showError = (field: string, formikProps: FormikProps<NewRecipeFormValues>): boolean => {
-//     return (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) ||
-//         (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field));
-// };
-//
-// const errorMessage = (field: string, formikProps: FormikProps<NewRecipeFormValues>): string => {
-//     if (!getIn(formikProps.touched, field) && !!formikProps.status && !!getIn(formikProps.status, field)) {
-//         return getIn(formikProps.status, field);
-//     } else if (!!getIn(formikProps.touched, field) && !!getIn(formikProps.errors, field)) {
-//         return getIn(formikProps.errors, field);
-//     } else {
-//         return "";
-//     }
-// };
-
-const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecipeFormValues>) => {
+const handleSubmit = (values: NewRecipeFormValues, props: FormikBag<NewRecipeFormProps, NewRecipeFormValues>) => {
     const {doCreate} = values;
     if (values.name && values.description && values.servings) {
         const recipe: RecipeCreateRequest = {
@@ -76,6 +61,31 @@ const handleSubmit = (values: NewRecipeFormValues, props: FormikHelpers<NewRecip
     void props.setTouched(newTouched);
 };
 
+const showError = (field: string, formikProps: FormikProps<NewRecipeFormValues>): boolean => {
+    const status = formikProps.status as NewRecipeFormValues | undefined;
+
+    const fieldTouched = !!formikProps.touched[field as keyof NewRecipeFormValues];
+    const hasFormikError = Boolean(formikProps.errors[field as keyof NewRecipeFormValues]);
+    const hasStatusError = !!(status && status[field as keyof NewRecipeFormValues]);
+
+    return (fieldTouched && hasFormikError) || (!fieldTouched && hasStatusError)
+};
+
+const errorMessage = (field: string, formikProps: FormikProps<NewRecipeFormValues>): string => {
+    const status = formikProps.status as NewRecipeFormValues | undefined;
+    const fieldTouched = !!formikProps.touched[field as keyof NewRecipeFormValues];
+    const formikError = formikProps.errors[field as keyof NewRecipeFormValues];
+    const statusError = status && status[field as keyof NewRecipeFormValues];
+
+    if (!fieldTouched && typeof statusError == "string" && Boolean(statusError)) {
+        return statusError
+    } else if (fieldTouched && typeof formikError == "string" && Boolean(formikError)) {
+        return formikError
+    } else {
+        return ""
+    }
+};
+
 export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
     const {handleSubmit, getFieldProps, isSubmitting, touched, errors} = props;
 
@@ -90,40 +100,44 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                 </Typography>
                 <form onSubmit={handleSubmit} className={classes.form}>
                     <TextField
+                        data-testid="nameSection"
                         placeholder="Name"
                         variant="outlined"
                         label="Name"
                         margin="normal"
-                        error={touched.name && Boolean(errors.name)}
-                        helperText={touched.name && errors.name}
+                        error={showError("name", props)}
+                        helperText={errorMessage("name", props)}
                         {...getFieldProps("name")}
                         required
                         fullWidth
                     />
                     <TextField
+                        data-testid="descriptionSection"
                         placeholder="Description"
                         variant="outlined"
                         label="Description"
                         margin="normal"
-                        error={touched.description && Boolean(errors.description)}
-                        helperText={touched.description && errors.description}
+                        error={showError("description", props)}
+                        helperText={errorMessage("description", props)}
                         {...getFieldProps("description")}
                         required
                         fullWidth
                     />
                     <TextField
+                        data-testid="servingsSection"
                         type="number"
                         placeholder="Servings"
                         variant="outlined"
                         label="Servings"
                         margin="normal"
-                        error={touched.servings && Boolean(errors.servings)}
-                        helperText={touched.servings && errors.servings}
+                        error={showError("servings", props)}
+                        helperText={errorMessage("servings", props)}
                         {...getFieldProps("servings")}
                         required
                         fullWidth
                     />
                     <TextField
+                        data-testid="prepTimeSection"
                         placeholder="Prep Time"
                         variant="outlined"
                         label="Prep Time"
@@ -134,6 +148,7 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         fullWidth
                     />
                     <TextField
+                        data-testid="cookTimeSection"
                         placeholder="Cook Time"
                         variant="outlined"
                         label="Cook Time"
@@ -144,6 +159,7 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         fullWidth
                     />
                     <TextField
+                        data-testid="coolTimeSection"
                         placeholder="Cool Time"
                         variant="outlined"
                         label="Cool Time"
@@ -154,6 +170,7 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         fullWidth
                     />
                     <TextField
+                        data-testid="totalTimeSection"
                         placeholder="Total Time"
                         variant="outlined"
                         label="Total Time"
@@ -164,6 +181,7 @@ export const NewRecipeFormInner = (props: FormikProps<NewRecipeFormValues>) => {
                         fullWidth
                     />
                     <TextField
+                        data-testid="sourceSection"
                         type="source"
                         placeholder="Source"
                         variant="outlined"
