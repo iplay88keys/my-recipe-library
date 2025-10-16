@@ -12,7 +12,7 @@ Built with:
 # Local Development
 ## Requirements
 * Podman
-* Go 1.19+
+* Go 1.25+
 * Node
 * Yarn
 * React
