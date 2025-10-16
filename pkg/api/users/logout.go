@@ -9,7 +9,7 @@ import (
 )
 
 type validateToken func(r *http.Request) (*token.AccessDetails, error)
-type deleteTokenDetails func(uuid string) (int64, error)
+type deleteTokenDetails func(uuid string) error
 
 func Logout(validateToken validateToken, deleteTokenDetails deleteTokenDetails) *api.Endpoint {
 	return &api.Endpoint{
@@ -22,8 +22,8 @@ func Logout(validateToken validateToken, deleteTokenDetails deleteTokenDetails) 
 				return api.NewResponse(http.StatusUnauthorized, nil)
 			}
 
-			userID, err := deleteTokenDetails(details.AccessUuid)
-			if err != nil || userID == 0 {
+			err = deleteTokenDetails(details.AccessUuid)
+			if err != nil {
 				return api.NewResponse(http.StatusUnauthorized, nil)
 			}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
@@ -93,6 +94,15 @@ var _ = BeforeEach(func() {
 	err = os.Setenv("MYSQL_CREDS", mysqlCreds)
 	Expect(err).ToNot(HaveOccurred())
 
+	// Set STATIC_DIR to point to the actual ui/build directory
+	// The executable runs from a temp directory, so we need an absolute path
+	// Find the project root by looking for go.mod
+	projectRoot, err := findProjectRoot()
+	Expect(err).ToNot(HaveOccurred())
+	staticDir := projectRoot + "/ui/build"
+	err = os.Setenv("STATIC_DIR", staticDir)
+	Expect(err).ToNot(HaveOccurred())
+
 	cmd := exec.Command(pathToExecutable)
 
 	session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -104,3 +114,25 @@ var _ = AfterEach(func() {
 	session.Signal(syscall.SIGKILL)
 	Eventually(session, 200*time.Millisecond).Should(gexec.Exit())
 })
+
+func findProjectRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	return "", fmt.Errorf("could not find project root (go.mod not found)")
+}
