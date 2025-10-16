@@ -2,12 +2,12 @@ package users_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-
 	"github.com/iplay88keys/my-recipe-library/pkg/api/users"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,16 +16,10 @@ import (
 
 var _ = Describe("register", func() {
 	It("creates a user", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
@@ -37,7 +31,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -45,16 +39,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns validation info", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
@@ -66,7 +54,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -84,16 +72,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns info if the username already exists", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return true, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("username already exists")
+			},
 		}
 
 		body := []byte(`{
@@ -105,7 +87,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -121,16 +103,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns info if the email already exists", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return true, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("email already exists")
+			},
 		}
 
 		body := []byte(`{
@@ -142,7 +118,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -158,22 +134,16 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns bad request if the body is empty", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return -1, errors.New("some error")
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("some error")
+			},
 		}
 
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer([]byte("")))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -181,16 +151,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns an error if the username check fails", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, errors.New("error username")
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("database error")
+			},
 		}
 
 		body := []byte(`{
@@ -202,7 +166,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -210,16 +174,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns an error if the email check fails", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, errors.New("error email")
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return 1, nil
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("database error")
+			},
 		}
 
 		body := []byte(`{
@@ -231,7 +189,7 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -239,16 +197,10 @@ var _ = Describe("register", func() {
 	})
 
 	It("returns an error if the user insert fails", func() {
-		existsByUsername := func(username string) (bool, error) {
-			return false, nil
-		}
-
-		existsByEmail := func(email string) (bool, error) {
-			return false, nil
-		}
-
-		insertUser := func(username, email, password string) (int64, error) {
-			return -1, errors.New("some error")
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return errors.New("insert failed")
+			},
 		}
 
 		body := []byte(`{
@@ -260,10 +212,80 @@ var _ = Describe("register", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Register(existsByUsername, existsByEmail, insertUser).Handle(&api.Request{
+		resp := users.Register(fakeService).Handle(&api.Request{
 			Req: req,
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
+
+	It("returns validation info for invalid password", func() {
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return nil
+			},
+		}
+
+		body := []byte(`{
+            "username": "username",
+            "email":    "email@example.com",
+            "password": "weak"
+        }`)
+
+		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
+		Expect(err).ToNot(HaveOccurred())
+
+		resp := users.Register(fakeService).Handle(&api.Request{
+			Req: req,
+		})
+
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+
+		respBody, err := json.Marshal(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respBody).To(MatchJSON(`{
+            "errors": {
+                "password": "Uppercase letter missing, Numeric character missing, Special character missing, Must be between 6 and 64 characters long"
+            }
+        }`))
+	})
+
+	It("returns validation info for invalid email", func() {
+		fakeService := &mockUserRegistrar{
+			registerUser: func(ctx context.Context, username, email, password string) error {
+				return nil
+			},
+		}
+
+		body := []byte(`{
+            "username": "username",
+            "email":    "invalid-email",
+            "password": "Pa3$12345"
+        }`)
+
+		req, err := http.NewRequest(http.MethodPost, "/users/register", bytes.NewBuffer(body))
+		Expect(err).ToNot(HaveOccurred())
+
+		resp := users.Register(fakeService).Handle(&api.Request{
+			Req: req,
+		})
+
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+
+		respBody, err := json.Marshal(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respBody).To(MatchJSON(`{
+            "errors": {
+                "email": "Invalid email address"
+            }
+        }`))
+	})
 })
+
+type mockUserRegistrar struct {
+	registerUser func(ctx context.Context, username, email, password string) error
+}
+
+func (m *mockUserRegistrar) RegisterUser(ctx context.Context, username, email, password string) error {
+	return m.registerUser(ctx, username, email, password)
+}

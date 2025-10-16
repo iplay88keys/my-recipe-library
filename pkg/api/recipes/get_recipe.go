@@ -1,6 +1,7 @@
 package recipes
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -8,34 +9,56 @@ import (
 	"strconv"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 )
 
 type RecipeResponse struct {
-	repositories.Recipe
-	Ingredients []*repositories.Ingredient `json:"ingredients"`
-	Steps       []*repositories.Step       `json:"steps"`
+	ID          int64                 `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Creator     string                `json:"creator"`
+	Servings    *int                  `json:"servings,omitempty"`
+	PrepTime    *string               `json:"prep_time,omitempty"`
+	CookTime    *string               `json:"cook_time,omitempty"`
+	CoolTime    *string               `json:"cool_time,omitempty"`
+	TotalTime   *string               `json:"total_time,omitempty"`
+	Source      *string               `json:"source,omitempty"`
+	Ingredients []*IngredientResponse `json:"ingredients"`
+	Steps       []*StepResponse       `json:"steps"`
 }
 
-type ByIngredientNumber []*repositories.Ingredient
+type IngredientResponse struct {
+	Ingredient       string  `json:"ingredient"`
+	IngredientNumber int     `json:"ingredient_number"`
+	Amount           *string `json:"amount"`
+	Measurement      *string `json:"measurement"`
+	Preparation      *string `json:"preparation"`
+}
+
+type StepResponse struct {
+	StepNumber   int    `json:"step_number"`
+	Instructions string `json:"instructions"`
+}
+
+type ByIngredientNumber []*services.IngredientDetail
 
 func (a ByIngredientNumber) Len() int      { return len(a) }
 func (a ByIngredientNumber) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByIngredientNumber) Less(i, j int) bool {
-	return *a[i].IngredientNumber < *a[j].IngredientNumber
+	return a[i].OrderNum < a[j].OrderNum
 }
 
-type ByStepNumber []*repositories.Step
+type ByStepNumber []*services.StepDetail
 
 func (a ByStepNumber) Len() int           { return len(a) }
 func (a ByStepNumber) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByStepNumber) Less(i, j int) bool { return *a[i].StepNumber < *a[j].StepNumber }
+func (a ByStepNumber) Less(i, j int) bool { return a[i].OrderNum < a[j].OrderNum }
 
-type getRecipe func(recipeID, userID int64) (*repositories.Recipe, error)
-type getIngredientsForRecipe func(recipeID int64) ([]*repositories.Ingredient, error)
-type getStepsForRecipe func(recipeID int64) ([]*repositories.Step, error)
+type RecipeFetcher interface {
+	GetRecipe(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error)
+}
 
-func GetRecipe(getRecipe getRecipe, getIngredientsForRecipe getIngredientsForRecipe, getStepsForRecipe getStepsForRecipe) *api.Endpoint {
+func GetRecipe(service RecipeFetcher) *api.Endpoint {
 	return &api.Endpoint{
 		Path:   "recipes/{id}",
 		Method: http.MethodGet,
@@ -53,7 +76,7 @@ func GetRecipe(getRecipe getRecipe, getIngredientsForRecipe getIngredientsForRec
 				return api.NewResponse(http.StatusBadRequest, nil)
 			}
 
-			recipe, err := getRecipe(recipeID, r.UserID)
+			recipeDetail, err := service.GetRecipe(r.Req.Context(), recipeID, r.UserID)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					return api.NewResponse(http.StatusNotFound, nil)
@@ -63,25 +86,41 @@ func GetRecipe(getRecipe getRecipe, getIngredientsForRecipe getIngredientsForRec
 				return api.NewResponse(http.StatusInternalServerError, nil)
 			}
 
-			recipeIngredients, err := getIngredientsForRecipe(recipeID)
-			if err != nil {
-				fmt.Printf("Error getting ingredients for recipe: %s\n", err.Error())
-				return api.NewResponse(http.StatusInternalServerError, nil)
+			sort.Sort(ByIngredientNumber(recipeDetail.Ingredients))
+			sort.Sort(ByStepNumber(recipeDetail.Steps))
+
+			ingredients := make([]*IngredientResponse, len(recipeDetail.Ingredients))
+			for i, ingredient := range recipeDetail.Ingredients {
+				ingredients[i] = &IngredientResponse{
+					Ingredient:       ingredient.Name,
+					IngredientNumber: ingredient.OrderNum,
+					Amount:           ingredient.Amount,
+					Measurement:      ingredient.Unit,
+					Preparation:      ingredient.Notes,
+				}
 			}
 
-			recipeSteps, err := getStepsForRecipe(recipeID)
-			if err != nil {
-				fmt.Printf("Error getting steps for recipe: %s\n", err.Error())
-				return api.NewResponse(http.StatusInternalServerError, nil)
+			steps := make([]*StepResponse, len(recipeDetail.Steps))
+			for i, step := range recipeDetail.Steps {
+				steps[i] = &StepResponse{
+					StepNumber:   step.OrderNum,
+					Instructions: step.Instructions,
+				}
 			}
-
-			sort.Sort(ByIngredientNumber(recipeIngredients))
-			sort.Sort(ByStepNumber(recipeSteps))
 
 			resp := &RecipeResponse{
-				Recipe:      *recipe,
-				Ingredients: recipeIngredients,
-				Steps:       recipeSteps,
+				ID:          recipeDetail.ID,
+				Name:        recipeDetail.Name,
+				Description: recipeDetail.Description,
+				Creator:     recipeDetail.Creator,
+				Servings:    recipeDetail.Servings,
+				PrepTime:    recipeDetail.PrepTime,
+				CookTime:    recipeDetail.CookTime,
+				CoolTime:    recipeDetail.CoolTime,
+				TotalTime:   recipeDetail.TotalTime,
+				Source:      recipeDetail.Source,
+				Ingredients: ingredients,
+				Steps:       steps,
 			}
 
 			return api.NewResponse(http.StatusOK, resp)

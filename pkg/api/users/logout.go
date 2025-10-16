@@ -3,26 +3,27 @@ package users
 import (
 	"net/http"
 
-	"github.com/iplay88keys/my-recipe-library/pkg/token"
-
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
+	"github.com/iplay88keys/my-recipe-library/pkg/token"
 )
 
-type validateToken func(r *http.Request) (*token.AccessDetails, error)
-type deleteTokenDetails func(uuid string) error
+type LogoutService interface {
+	ValidateToken(r *http.Request) (*token.AccessDetails, error)
+	DeleteTokenDetails(uuid string) error
+}
 
-func Logout(validateToken validateToken, deleteTokenDetails deleteTokenDetails) *api.Endpoint {
+func Logout(service LogoutService) *api.Endpoint {
 	return &api.Endpoint{
 		Path:   "users/logout",
 		Method: http.MethodPost,
 		Auth:   true,
 		Handle: func(r *api.Request) *api.Response {
-			details, err := validateToken(r.Req)
+			details, err := service.ValidateToken(r.Req)
 			if err != nil {
 				return api.NewResponse(http.StatusUnauthorized, nil)
 			}
 
-			err = deleteTokenDetails(details.AccessUuid)
+			err = service.DeleteTokenDetails(details.AccessUuid)
 			if err != nil {
 				return api.NewResponse(http.StatusUnauthorized, nil)
 			}

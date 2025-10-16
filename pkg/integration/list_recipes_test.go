@@ -10,7 +10,6 @@ import (
 	"github.com/iplay88keys/my-recipe-library/pkg/api/users"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api/recipes"
-	. "github.com/iplay88keys/my-recipe-library/pkg/helpers"
 	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -94,13 +93,10 @@ var _ = Describe("ListRecipes", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(recipeList).To(Equal(recipes.RecipeListResponse{
-				Recipes: []*repositories.Recipe{{
-					ID:          Int64Pointer(firstRecipeID),
-					Name:        StringPointer("Root Beer Float"),
-					Description: StringPointer("Delicious drink for a hot summer day."),
-					Creator:     nil,
-					PrepTime:    nil,
-					Source:      nil,
+				Recipes: []*recipes.RecipeSummaryResponse{{
+					ID:          firstRecipeID,
+					Name:        "Root Beer Float",
+					Description: "Delicious drink for a hot summer day.",
 				}},
 			}))
 		})

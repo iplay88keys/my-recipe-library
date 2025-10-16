@@ -1,13 +1,14 @@
 package recipes
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	. "github.com/iplay88keys/my-recipe-library/pkg/helpers"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 )
 
 type CreateRecipeResponse struct {
@@ -15,9 +16,11 @@ type CreateRecipeResponse struct {
 	Errors   map[string]string `json:"errors,omitempty"`
 }
 
-type createRecipe func(recipe *repositories.Recipe, userID int64) (int64, error)
+type RecipeCreator interface {
+	CreateRecipe(ctx context.Context, userID int64, recipe *services.RecipeInput) (int64, error)
+}
 
-func CreateRecipe(createRecipe createRecipe) *api.Endpoint {
+func CreateRecipe(service RecipeCreator) *api.Endpoint {
 	return &api.Endpoint{
 		Path:   "recipes",
 		Method: http.MethodPost,
@@ -38,16 +41,40 @@ func CreateRecipe(createRecipe createRecipe) *api.Endpoint {
 				return api.NewResponse(http.StatusBadRequest, resp)
 			}
 
-			recipeID, err := createRecipe(&repositories.Recipe{
-				Name:        StringPointer(recipe.Name),
-				Description: StringPointer(recipe.Description),
+			ingredients := make([]*services.IngredientInput, len(recipe.Ingredients))
+			for i, ingredient := range recipe.Ingredients {
+				ingredients[i] = &services.IngredientInput{
+					Name:     ingredient.Name,
+					Amount:   ingredient.Amount,
+					Unit:     ingredient.Unit,
+					Notes:    ingredient.Notes,
+					OrderNum: ingredient.OrderNum,
+				}
+			}
+
+			steps := make([]*services.StepInput, len(recipe.Steps))
+			for i, step := range recipe.Steps {
+				steps[i] = &services.StepInput{
+					Instructions: step.Instructions,
+					OrderNum:     step.OrderNum,
+					Notes:        &step.Notes,
+				}
+			}
+
+			recipeInput := &services.RecipeInput{
+				Name:        recipe.Name,
+				Description: recipe.Description,
 				Servings:    IntPointer(recipe.Servings),
 				PrepTime:    StringPointer(recipe.PrepTime),
 				CookTime:    StringPointer(recipe.CookTime),
 				CoolTime:    StringPointer(recipe.CoolTime),
 				TotalTime:   StringPointer(recipe.TotalTime),
 				Source:      StringPointer(recipe.Source),
-			}, r.UserID)
+				Ingredients: ingredients,
+				Steps:       steps,
+			}
+
+			recipeID, err := service.CreateRecipe(r.Req.Context(), r.UserID, recipeInput)
 			if err != nil {
 				fmt.Printf("Error adding recipe: %s\n", err.Error())
 				return api.NewResponse(http.StatusInternalServerError, nil)

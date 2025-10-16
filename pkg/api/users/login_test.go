@@ -7,10 +7,8 @@ import (
 	"net/http"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-
-	"github.com/iplay88keys/my-recipe-library/pkg/token"
-
 	"github.com/iplay88keys/my-recipe-library/pkg/api/users"
+	"github.com/iplay88keys/my-recipe-library/pkg/token"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,19 +16,19 @@ import (
 
 var _ = Describe("login", func() {
 	It("logs a user in", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return true, 0, nil
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return &token.Details{
-				AccessToken:  "access token",
-				RefreshToken: "refresh token",
-			}, nil
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return nil
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return true, 1, nil
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return &token.Details{
+					AccessToken:  "access token",
+					RefreshToken: "refresh token",
+				}, nil
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
@@ -41,7 +39,7 @@ var _ = Describe("login", func() {
 		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -55,28 +53,62 @@ var _ = Describe("login", func() {
         }`))
 	})
 
-	It("returns unauthorized if the login fails due to bad credentials", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return false, 0, nil
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return &token.Details{}, nil
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return nil
+	It("returns validation info", func() {
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return false, 0, nil
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return &token.Details{
+					AccessToken:  "access token",
+					RefreshToken: "refresh token",
+				}, nil
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
-            "login": "username",
-            "password": "bad-password"
+            "login": "",
+            "password": ""
         }`)
 
 		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
+			Req: req,
+		})
+
+		Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("returns unauthorized for invalid credentials", func() {
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return false, 0, nil
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return &token.Details{
+					AccessToken:  "access token",
+					RefreshToken: "refresh token",
+				}, nil
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return nil
+			},
+		}
+
+		body := []byte(`{
+            "login": "username",
+            "password": "wrongpassword"
+        }`)
+
+		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
+		Expect(err).ToNot(HaveOccurred())
+
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
 			Req: req,
 		})
 
@@ -91,110 +123,111 @@ var _ = Describe("login", func() {
         }`))
 	})
 
-	It("returns a bad request if the body is empty", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return false, 0, nil
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return &token.Details{}, nil
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return nil
-		}
-
-		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer([]byte("")))
-		Expect(err).ToNot(HaveOccurred())
-
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
-			Req: req,
-		})
-
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-	})
-
-	It("returns an error if the login check fails", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return false, 0, errors.New("some error")
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return &token.Details{}, nil
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return nil
+	It("returns internal server error if verification fails", func() {
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return false, 0, errors.New("verification failed")
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return &token.Details{
+					AccessToken:  "access token",
+					RefreshToken: "refresh token",
+				}, nil
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
             "login": "username",
-            "password": "bad-password"
+            "password": "Pa3$12345"
         }`)
 
 		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
 			Req: req,
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 
-	It("returns an error if the token creation fails", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return true, 0, nil
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return nil, errors.New("some error")
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return nil
+	It("returns internal server error if token creation fails", func() {
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return true, 1, nil
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return nil, errors.New("token creation failed")
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return nil
+			},
 		}
 
 		body := []byte(`{
             "login": "username",
-            "password": "bad-password"
+            "password": "Pa3$12345"
         }`)
 
 		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
 			Req: req,
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 
-	It("returns an error if the token storing fails", func() {
-		verify := func(login, password string) (bool, int64, error) {
-			return true, 0, nil
-		}
-
-		createToken := func(userid int64) (*token.Details, error) {
-			return &token.Details{}, nil
-		}
-
-		storeToken := func(userid int64, details *token.Details) error {
-			return errors.New("some error")
+	It("returns internal server error if token storage fails", func() {
+		fakeLoginService := &mockLoginService{
+			verify: func(login, password string) (bool, int64, error) {
+				return true, 1, nil
+			},
+			createToken: func(userID int64) (*token.Details, error) {
+				return &token.Details{
+					AccessToken:  "access token",
+					RefreshToken: "refresh token",
+				}, nil
+			},
+			storeTokenDetails: func(userID int64, details *token.Details) error {
+				return errors.New("token storage failed")
+			},
 		}
 
 		body := []byte(`{
             "login": "username",
-            "password": "bad-password"
+            "password": "Pa3$12345"
         }`)
 
 		req, err := http.NewRequest(http.MethodPost, "/users/login", bytes.NewBuffer(body))
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := users.Login(verify, createToken, storeToken).Handle(&api.Request{
+		resp := users.Login(fakeLoginService).Handle(&api.Request{
 			Req: req,
 		})
 
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 })
+
+type mockLoginService struct {
+	verify            func(login, password string) (bool, int64, error)
+	createToken       func(userID int64) (*token.Details, error)
+	storeTokenDetails func(userID int64, details *token.Details) error
+}
+
+func (m *mockLoginService) Verify(login, password string) (bool, int64, error) {
+	return m.verify(login, password)
+}
+
+func (m *mockLoginService) CreateToken(userID int64) (*token.Details, error) {
+	return m.createToken(userID)
+}
+
+func (m *mockLoginService) StoreTokenDetails(userID int64, details *token.Details) error {
+	return m.storeTokenDetails(userID, details)
+}

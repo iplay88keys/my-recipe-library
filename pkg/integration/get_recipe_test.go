@@ -124,28 +124,26 @@ var _ = Describe("GetRecipe", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(recipeList).To(Equal(recipes.RecipeResponse{
-				Recipe: repositories.Recipe{
-					ID:          Int64Pointer(recipeID),
-					Name:        StringPointer("Ice Cream"),
-					Description: StringPointer("Yum."),
-					Creator:     StringPointer(username),
-					Servings:    IntPointer(1),
-					PrepTime:    StringPointer("1 m"),
-					CookTime:    nil,
-					CoolTime:    nil,
-					TotalTime:   StringPointer("1 m"),
-					Source:      nil,
-				},
-				Ingredients: []*repositories.Ingredient{{
-					Ingredient:       StringPointer("Vanilla Ice Cream"),
-					IngredientNumber: IntPointer(1),
+				ID:          recipeID,
+				Name:        "Ice Cream",
+				Description: "Yum.",
+				Creator:     username,
+				Servings:    IntPointer(1),
+				PrepTime:    StringPointer("1 m"),
+				CookTime:    nil,
+				CoolTime:    nil,
+				TotalTime:   StringPointer("1 m"),
+				Source:      nil,
+				Ingredients: []*recipes.IngredientResponse{{
+					Ingredient:       "Vanilla Ice Cream",
+					IngredientNumber: 1,
 					Amount:           StringPointer("1"),
 					Measurement:      StringPointer("Scoop"),
 					Preparation:      nil,
 				}},
-				Steps: []*repositories.Step{{
-					StepNumber:   IntPointer(1),
-					Instructions: StringPointer("Place ice cream in bowl."),
+				Steps: []*recipes.StepResponse{{
+					StepNumber:   1,
+					Instructions: "Place ice cream in bowl.",
 				}},
 			}))
 		})

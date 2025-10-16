@@ -7,16 +7,16 @@ import (
 )
 
 type Recipe struct {
-	ID          *int64  `json:"id"`
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-	Creator     *string `json:"creator,omitempty"`
-	Servings    *int    `json:"servings,omitempty"`
-	PrepTime    *string `json:"prep_time,omitempty"`
-	CookTime    *string `json:"cook_time,omitempty"`
-	CoolTime    *string `json:"cool_time,omitempty"`
-	TotalTime   *string `json:"total_time,omitempty"`
-	Source      *string `json:"source,omitempty"`
+	ID          *int64
+	Name        *string
+	Description *string
+	Creator     *string
+	Servings    *int
+	PrepTime    *string
+	CookTime    *string
+	CoolTime    *string
+	TotalTime   *string
+	Source      *string
 }
 
 type RecipesRepository struct {
@@ -98,7 +98,7 @@ func (r *RecipesRepository) Insert(recipe *Recipe, userID int64) (int64, error) 
 	id, err := res.LastInsertId()
 	if err != nil {
 		fmt.Printf("RecipeResponse was not saved correctly: %s\n", err.Error())
-		return 0, errors.New(fmt.Sprintf("recipe was not saved correctly: %s", err.Error()))
+		return 0, fmt.Errorf("recipe was not saved correctly: %s", err.Error())
 	}
 
 	return id, nil

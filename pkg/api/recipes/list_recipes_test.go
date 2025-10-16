@@ -1,6 +1,7 @@
 package recipes_test
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -8,8 +9,7 @@ import (
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
 	"github.com/iplay88keys/my-recipe-library/pkg/api/recipes"
-	. "github.com/iplay88keys/my-recipe-library/pkg/helpers"
-	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,26 +17,26 @@ import (
 
 var _ = Describe("ListRecipes", func() {
 	It("returns the list of recipes", func() {
-		listRecipes := func(userID int64) ([]*repositories.Recipe, error) {
-			return []*repositories.Recipe{{
-				ID:          Int64Pointer(1),
-				Name:        StringPointer("First"),
-				Description: StringPointer("One"),
-				Creator:     StringPointer("Some Creator"),
-				Source:      StringPointer("Some Website"),
-			}, {
-				ID:          Int64Pointer(2),
-				Name:        StringPointer("Second"),
-				Description: StringPointer("Two"),
-				Creator:     StringPointer("Some Creator"),
-				Source:      nil,
-			}}, nil
+		recipeSummaries := []*services.RecipeSummary{{
+			ID:          1,
+			Name:        "First",
+			Description: "One",
+		}, {
+			ID:          2,
+			Name:        "Second",
+			Description: "Two",
+		}}
+
+		fakeService := &mockRecipeLister{
+			listRecipes: func(ctx context.Context, userID int64) ([]*services.RecipeSummary, error) {
+				return recipeSummaries, nil
+			},
 		}
 
 		req, err := http.NewRequest(http.MethodGet, "/recipes", nil)
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := recipes.ListRecipes(listRecipes).Handle(&api.Request{
+		resp := recipes.ListRecipes(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -49,27 +49,26 @@ var _ = Describe("ListRecipes", func() {
             "recipes": [{
                 "id": 1,
                 "name": "First",
-                "description": "One",
-                "creator": "Some Creator",
-                "source": "Some Website"
+                "description": "One"
             }, {
                 "id": 2,
                 "name": "Second",
-                "description": "Two",
-                "creator": "Some Creator"
+                "description": "Two"
             }]
         }`))
 	})
 
 	It("returns no content if there are no recipes", func() {
-		listRecipes := func(userID int64) ([]*repositories.Recipe, error) {
-			return nil, sql.ErrNoRows
+		fakeService := &mockRecipeLister{
+			listRecipes: func(ctx context.Context, userID int64) ([]*services.RecipeSummary, error) {
+				return nil, sql.ErrNoRows
+			},
 		}
 
 		req, err := http.NewRequest(http.MethodGet, "/recipes", nil)
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := recipes.ListRecipes(listRecipes).Handle(&api.Request{
+		resp := recipes.ListRecipes(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -78,14 +77,16 @@ var _ = Describe("ListRecipes", func() {
 	})
 
 	It("returns an error if the repository call fails", func() {
-		listRecipes := func(userID int64) ([]*repositories.Recipe, error) {
-			return nil, errors.New("some error")
+		fakeService := &mockRecipeLister{
+			listRecipes: func(ctx context.Context, userID int64) ([]*services.RecipeSummary, error) {
+				return nil, errors.New("some error")
+			},
 		}
 
 		req, err := http.NewRequest(http.MethodGet, "/recipes", nil)
 		Expect(err).ToNot(HaveOccurred())
 
-		resp := recipes.ListRecipes(listRecipes).Handle(&api.Request{
+		resp := recipes.ListRecipes(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -93,3 +94,11 @@ var _ = Describe("ListRecipes", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 })
+
+type mockRecipeLister struct {
+	listRecipes func(ctx context.Context, userID int64) ([]*services.RecipeSummary, error)
+}
+
+func (m *mockRecipeLister) ListRecipes(ctx context.Context, userID int64) ([]*services.RecipeSummary, error) {
+	return m.listRecipes(ctx, userID)
+}

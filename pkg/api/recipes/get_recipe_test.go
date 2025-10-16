@@ -1,6 +1,7 @@
 package recipes_test
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -8,10 +9,9 @@ import (
 	"net/http/httptest"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-
 	"github.com/iplay88keys/my-recipe-library/pkg/api/recipes"
 	. "github.com/iplay88keys/my-recipe-library/pkg/helpers"
-	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,51 +19,51 @@ import (
 
 var _ = Describe("GetRecipe", func() {
 	It("returns a recipe", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{
-				ID:          Int64Pointer(1),
-				Name:        StringPointer("Root Beer Float"),
-				Description: StringPointer("Delicious"),
-				Creator:     StringPointer("User1"),
-				Servings:    IntPointer(1),
-				PrepTime:    StringPointer("5 m"),
-				CookTime:    StringPointer("0 m"),
-				CoolTime:    StringPointer("0 m"),
-				TotalTime:   StringPointer("5 m"),
-				Source:      StringPointer("Some Book"),
-			}, nil
+		recipeDetail := &services.RecipeDetail{
+			ID:          1,
+			Name:        "Root Beer Float",
+			Description: "Delicious",
+			Creator:     "User1",
+			Servings:    IntPointer(1),
+			PrepTime:    StringPointer("5 m"),
+			CookTime:    StringPointer("0 m"),
+			CoolTime:    StringPointer("0 m"),
+			TotalTime:   StringPointer("5 m"),
+			Source:      StringPointer("Some Book"),
+			Ingredients: []*services.IngredientDetail{{
+				Name:     "Vanilla Ice Cream",
+				Amount:   StringPointer("1"),
+				Unit:     StringPointer("Scoop"),
+				Notes:    StringPointer("Frozen"),
+				OrderNum: 1,
+			}, {
+				Name:     "Root Beer",
+				Amount:   nil,
+				Unit:     nil,
+				Notes:    nil,
+				OrderNum: 2,
+			}},
+			Steps: []*services.StepDetail{{
+				Instructions: "Place ice cream in glass.",
+				OrderNum:     1,
+				Notes:        nil,
+			}, {
+				Instructions: "Top with Root Beer.",
+				OrderNum:     2,
+				Notes:        nil,
+			}},
 		}
 
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{{
-				Ingredient:       StringPointer("Vanilla Ice Cream"),
-				IngredientNumber: IntPointer(1),
-				Amount:           StringPointer("1"),
-				Measurement:      StringPointer("Scoop"),
-				Preparation:      StringPointer("Frozen"),
-			}, {
-				Ingredient:       StringPointer("Root Beer"),
-				IngredientNumber: IntPointer(2),
-				Amount:           nil,
-				Measurement:      nil,
-				Preparation:      nil,
-			}}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{{
-				StepNumber:   IntPointer(1),
-				Instructions: StringPointer("Place ice cream in glass."),
-			}, {
-				StepNumber:   IntPointer(2),
-				Instructions: StringPointer("Top with Root Beer."),
-			}}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return recipeDetail, nil
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -107,38 +107,37 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("sorts the recipe ingredients by ingredient number", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{
-				ID:          Int64Pointer(1),
-				Name:        StringPointer("Root Beer Float"),
-				Description: StringPointer("Delicious"),
-			}, nil
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{{
-				Ingredient:       StringPointer("Root Beer"),
-				IngredientNumber: IntPointer(2),
-				Amount:           nil,
-				Measurement:      nil,
-				Preparation:      nil,
+		recipeDetail := &services.RecipeDetail{
+			ID:          1,
+			Name:        "Root Beer Float",
+			Description: "Delicious",
+			Creator:     "User1",
+			Ingredients: []*services.IngredientDetail{{
+				Name:     "Root Beer",
+				Amount:   nil,
+				Unit:     nil,
+				Notes:    nil,
+				OrderNum: 2,
 			}, {
-				Ingredient:       StringPointer("Vanilla Ice Cream"),
-				IngredientNumber: IntPointer(1),
-				Amount:           StringPointer("1"),
-				Measurement:      StringPointer("Scoop"),
-				Preparation:      StringPointer("Frozen"),
-			}}, nil
+				Name:     "Vanilla Ice Cream",
+				Amount:   StringPointer("1"),
+				Unit:     StringPointer("Scoop"),
+				Notes:    StringPointer("Frozen"),
+				OrderNum: 1,
+			}},
+			Steps: []*services.StepDetail{},
 		}
 
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return recipeDetail, nil
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -151,6 +150,7 @@ var _ = Describe("GetRecipe", func() {
             "id": 1,
             "name": "Root Beer Float",
             "description": "Delicious",
+            "creator": "User1",
             "ingredients": [{
                 "ingredient": "Vanilla Ice Cream",
                 "ingredient_number": 1,
@@ -169,32 +169,33 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("sorts the recipe steps by step number", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{
-				ID:          Int64Pointer(1),
-				Name:        StringPointer("Root Beer Float"),
-				Description: StringPointer("Delicious"),
-			}, nil
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{{
-				StepNumber:   IntPointer(2),
-				Instructions: StringPointer("Top with Root Beer."),
+		recipeDetail := &services.RecipeDetail{
+			ID:          1,
+			Name:        "Root Beer Float",
+			Description: "Delicious",
+			Creator:     "User1",
+			Ingredients: []*services.IngredientDetail{},
+			Steps: []*services.StepDetail{{
+				Instructions: "Top with Root Beer.",
+				OrderNum:     2,
+				Notes:        nil,
 			}, {
-				StepNumber:   IntPointer(1),
-				Instructions: StringPointer("Place ice cream in glass."),
-			}}, nil
+				Instructions: "Place ice cream in glass.",
+				OrderNum:     1,
+				Notes:        nil,
+			}},
+		}
+
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return recipeDetail, nil
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -207,6 +208,7 @@ var _ = Describe("GetRecipe", func() {
             "id": 1,
             "name": "Root Beer Float",
             "description": "Delicious",
+            "creator": "User1",
             "ingredients": [],
             "steps": [{
                 "step_number": 1,
@@ -219,22 +221,16 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("returns an error if the recipe repository returns no rows", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return nil, sql.ErrNoRows
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return nil, sql.ErrNoRows
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -243,22 +239,16 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("returns an error if the recipe repository call fails", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return nil, errors.New("some error")
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return nil, errors.New("some error")
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -267,22 +257,16 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("returns an error if the ingredients repository call fails", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{}, nil
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return nil, errors.New("some error")
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return nil, errors.New("some error")
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -291,22 +275,16 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("returns an error if the steps repository call fails", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{}, nil
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return nil, errors.New("some error")
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return nil, errors.New("some error")
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/1", nil)
 		req.SetPathValue("id", "1")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -315,22 +293,16 @@ var _ = Describe("GetRecipe", func() {
 	})
 
 	It("returns an error if the provided route variable is not a number", func() {
-		getRecipe := func(recipeID, userID int64) (*repositories.Recipe, error) {
-			return &repositories.Recipe{}, nil
-		}
-
-		getIngredients := func(recipeID int64) ([]*repositories.Ingredient, error) {
-			return []*repositories.Ingredient{}, nil
-		}
-
-		getSteps := func(recipeID int64) ([]*repositories.Step, error) {
-			return []*repositories.Step{}, nil
+		fakeService := &mockRecipeFetcher{
+			getRecipe: func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+				return nil, nil
+			},
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/recipes/not-a-number", nil)
 		req.SetPathValue("id", "not-a-number")
 
-		resp := recipes.GetRecipe(getRecipe, getIngredients, getSteps).Handle(&api.Request{
+		resp := recipes.GetRecipe(fakeService).Handle(&api.Request{
 			Req:    req,
 			UserID: 2,
 		})
@@ -338,3 +310,11 @@ var _ = Describe("GetRecipe", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 	})
 })
+
+type mockRecipeFetcher struct {
+	getRecipe func(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error)
+}
+
+func (m *mockRecipeFetcher) GetRecipe(ctx context.Context, recipeID, userID int64) (*services.RecipeDetail, error) {
+	return m.getRecipe(ctx, recipeID, userID)
+}

@@ -43,26 +43,27 @@ var _ = Describe("API", func() {
 			return 10, nil
 		}
 
-		server = api.New(&api.Config{
-			Port:                  port,
-			StaticDir:             "fixtures",
-			Validate:              validateToken,
-			RetrieveAccessDetails: retrieveTokenDetails,
-			Endpoints: []*api.Endpoint{{
-				Path:   "test-unauthenticated-endpoint",
-				Method: http.MethodGet,
-				Handle: func(r *api.Request) *api.Response {
-					return api.NewResponse(http.StatusOK, nil)
-				},
-			}, {
-				Path:   "test-authenticated-endpoint",
-				Method: http.MethodGet,
-				Auth:   true,
-				Handle: func(r *api.Request) *api.Response {
-					return api.NewResponse(http.StatusOK, nil)
-				},
-			}},
-		})
+		server = api.New(
+			&mockTokenValidator{validateToken: validateToken},
+			&mockAccessDetailsRetriever{retrieveTokenDetails: retrieveTokenDetails},
+			&api.Config{
+				Port:      port,
+				StaticDir: "fixtures",
+				Endpoints: []*api.Endpoint{{
+					Path:   "test-unauthenticated-endpoint",
+					Method: http.MethodGet,
+					Handle: func(r *api.Request) *api.Response {
+						return api.NewResponse(http.StatusOK, nil)
+					},
+				}, {
+					Path:   "test-authenticated-endpoint",
+					Method: http.MethodGet,
+					Auth:   true,
+					Handle: func(r *api.Request) *api.Response {
+						return api.NewResponse(http.StatusOK, nil)
+					},
+				}},
+			})
 	})
 
 	It("serves the index page for the react app", func() {
@@ -169,3 +170,19 @@ var _ = Describe("API", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 	})
 })
+
+type mockTokenValidator struct {
+	validateToken func(r *http.Request) (*token.AccessDetails, error)
+}
+
+func (m *mockTokenValidator) ValidateToken(r *http.Request) (*token.AccessDetails, error) {
+	return m.validateToken(r)
+}
+
+type mockAccessDetailsRetriever struct {
+	retrieveTokenDetails func(details *token.AccessDetails) (int64, error)
+}
+
+func (m *mockAccessDetailsRetriever) RetrieveTokenDetails(details *token.AccessDetails) (int64, error) {
+	return m.retrieveTokenDetails(details)
+}

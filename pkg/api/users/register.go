@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -11,11 +12,11 @@ type RegisterResponse struct {
 	Errors map[string]string `json:"errors,omitempty"`
 }
 
-type existsByUsername func(username string) (bool, error)
-type existsByEmail func(email string) (bool, error)
-type insertUser func(username, email, password string) (int64, error)
+type UserRegistrar interface {
+	RegisterUser(ctx context.Context, username, email, password string) error
+}
 
-func Register(existsByUsername existsByUsername, existsByEmail existsByEmail, insertUser insertUser) *api.Endpoint {
+func Register(service UserRegistrar) *api.Endpoint {
 	return &api.Endpoint{
 		Path:   "users/register",
 		Method: http.MethodPost,
@@ -26,30 +27,34 @@ func Register(existsByUsername existsByUsername, existsByEmail existsByEmail, in
 				return api.NewResponse(http.StatusBadRequest, nil)
 			}
 
-			usernameExists, err := existsByUsername(user.Username)
-			if err != nil {
-				fmt.Println("Error checking if user exists by username for registration")
-				return api.NewResponse(http.StatusInternalServerError, nil)
-			}
-
-			emailExists, err := existsByEmail(user.Email)
-			if err != nil {
-				fmt.Println("Error checking if user exists by email for registration")
-				return api.NewResponse(http.StatusInternalServerError, nil)
-			}
-
-			validationErrors := user.Validate(usernameExists, emailExists)
+			validationErrors := user.Validate(false, false)
 			if len(validationErrors) > 0 {
 				resp := &RegisterResponse{
 					Errors: validationErrors,
 				}
-
 				return api.NewResponse(http.StatusBadRequest, resp)
 			}
 
-			_, err = insertUser(user.Username, user.Email, user.Password)
+			err := service.RegisterUser(r.Req.Context(), user.Username, user.Email, user.Password)
 			if err != nil {
-				fmt.Println("Failed to register user")
+				if err.Error() == "username already exists" {
+					resp := &RegisterResponse{
+						Errors: map[string]string{
+							"username": "Username already in use",
+						},
+					}
+					return api.NewResponse(http.StatusBadRequest, resp)
+				}
+				if err.Error() == "email already exists" {
+					resp := &RegisterResponse{
+						Errors: map[string]string{
+							"email": "Email already in use",
+						},
+					}
+					return api.NewResponse(http.StatusBadRequest, resp)
+				}
+
+				fmt.Println("Failed to register user:", err.Error())
 				return api.NewResponse(http.StatusInternalServerError, nil)
 			}
 

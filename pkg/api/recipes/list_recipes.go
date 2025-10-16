@@ -1,27 +1,36 @@
 package recipes
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 
 	"github.com/iplay88keys/my-recipe-library/pkg/api"
-	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 )
 
 type RecipeListResponse struct {
-	Recipes []*repositories.Recipe `json:"recipes"`
+	Recipes []*RecipeSummaryResponse `json:"recipes"`
 }
 
-type listRecipes func(userID int64) ([]*repositories.Recipe, error)
+type RecipeSummaryResponse struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
 
-func ListRecipes(listRecipes listRecipes) *api.Endpoint {
+type RecipeLister interface {
+	ListRecipes(ctx context.Context, userID int64) ([]*services.RecipeSummary, error)
+}
+
+func ListRecipes(service RecipeLister) *api.Endpoint {
 	return &api.Endpoint{
 		Path:   "recipes",
 		Method: http.MethodGet,
 		Auth:   true,
 		Handle: func(r *api.Request) *api.Response {
-			recipes, err := listRecipes(r.UserID)
+			recipeSummaries, err := service.ListRecipes(r.Req.Context(), r.UserID)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					return api.NewResponse(http.StatusNoContent, nil)
@@ -29,6 +38,15 @@ func ListRecipes(listRecipes listRecipes) *api.Endpoint {
 
 				fmt.Printf("Error listing recipes: %s\n", err.Error())
 				return api.NewResponse(http.StatusInternalServerError, nil)
+			}
+
+			recipes := make([]*RecipeSummaryResponse, len(recipeSummaries))
+			for i, summary := range recipeSummaries {
+				recipes[i] = &RecipeSummaryResponse{
+					ID:          summary.ID,
+					Name:        summary.Name,
+					Description: summary.Description,
+				}
 			}
 
 			resp := &RecipeListResponse{

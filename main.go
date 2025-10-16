@@ -19,6 +19,7 @@ import (
 	"github.com/iplay88keys/my-recipe-library/pkg/api/users"
 	"github.com/iplay88keys/my-recipe-library/pkg/config"
 	"github.com/iplay88keys/my-recipe-library/pkg/repositories"
+	"github.com/iplay88keys/my-recipe-library/pkg/services"
 	"github.com/iplay88keys/my-recipe-library/pkg/token"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -47,41 +48,28 @@ func main() {
 	}
 	defer disconnectFromRedis(redisClient)
 
+	// Create repositories
 	recipesRepo := repositories.NewRecipesRepository(db)
 	ingredientsRepo := repositories.NewIngredientsRepository(db)
 	stepsRepo := repositories.NewStepsRepository(db)
 	usersRepo := repositories.NewUsersRepository(db)
-
 	redisRepo := repositories.NewRedisRepository(redisClient)
 	tokenService := token.NewService(cfg.AccessSecret, cfg.RefreshSecret)
 
-	a := api.New(&api.Config{
-		Port:                  cfg.Port,
-		StaticDir:             cfg.Static,
-		Validate:              tokenService.ValidateToken,
-		RetrieveAccessDetails: redisRepo.RetrieveTokenDetails,
+	// Create services
+	recipeService := services.NewRecipeService(recipesRepo, ingredientsRepo, stepsRepo, db)
+	userService := services.NewUserService(usersRepo, redisRepo, tokenService)
+
+	a := api.New(tokenService, redisRepo, &api.Config{
+		Port:      cfg.Port,
+		StaticDir: cfg.Static,
 		Endpoints: []*api.Endpoint{
-			recipes.CreateRecipe(recipesRepo.Insert),
-			recipes.ListRecipes(recipesRepo.List),
-			recipes.GetRecipe(
-				recipesRepo.Get,
-				ingredientsRepo.GetForRecipe,
-				stepsRepo.GetForRecipe,
-			),
-			users.Register(
-				usersRepo.ExistsByUsername,
-				usersRepo.ExistsByEmail,
-				usersRepo.Insert,
-			),
-			users.Login(
-				usersRepo.Verify,
-				tokenService.CreateToken,
-				redisRepo.StoreTokenDetails,
-			),
-			users.Logout(
-				tokenService.ValidateToken,
-				redisRepo.DeleteTokenDetails,
-			),
+			recipes.CreateRecipe(recipeService),
+			recipes.ListRecipes(recipeService),
+			recipes.GetRecipe(recipeService),
+			users.Register(userService),
+			users.Login(userService),
+			users.Logout(userService),
 		},
 	})
 

@@ -12,25 +12,32 @@ import (
 	"github.com/iplay88keys/my-recipe-library/pkg/token"
 )
 
-type validate func(r *http.Request) (*token.AccessDetails, error)
-type retrieveAccessDetails func(details *token.AccessDetails) (int64, error)
+type TokenValidator interface {
+	ValidateToken(r *http.Request) (*token.AccessDetails, error)
+}
+
+type AccessDetailsRetriever interface {
+	RetrieveTokenDetails(details *token.AccessDetails) (int64, error)
+}
 
 type Config struct {
-	Port                  string
-	StaticDir             string
-	Validate              validate
-	RetrieveAccessDetails retrieveAccessDetails
-	Endpoints             []*Endpoint
+	Port      string
+	StaticDir string
+	Endpoints []*Endpoint
 }
 
 type API struct {
-	Config *Config
-	Server *http.Server
+	Config                 *Config
+	Server                 *http.Server
+	tokenValidator         TokenValidator
+	accessDetailsRetriever AccessDetailsRetriever
 }
 
-func New(config *Config) *API {
+func New(tokenValidator TokenValidator, accessDetailsRetriever AccessDetailsRetriever, config *Config) *API {
 	server := &API{
-		Config: config,
+		tokenValidator:         tokenValidator,
+		accessDetailsRetriever: accessDetailsRetriever,
+		Config:                 config,
 		Server: &http.Server{
 			Addr:         net.JoinHostPort("", config.Port),
 			ReadTimeout:  15 * time.Second,
@@ -125,13 +132,13 @@ func writeResponse(w http.ResponseWriter, resp *Response) {
 }
 
 func (a *API) ValidateUserToken(r *http.Request) (int64, bool) {
-	details, err := a.Config.Validate(r)
+	details, err := a.tokenValidator.ValidateToken(r)
 	if err != nil {
 		fmt.Printf("Failed to validate token: %s\n", err.Error())
 		return -1, false
 	}
 
-	userID, err := a.Config.RetrieveAccessDetails(details)
+	userID, err := a.accessDetailsRetriever.RetrieveTokenDetails(details)
 	if err != nil {
 		fmt.Printf("Failed to retrieve token details from redis: %s\n", err.Error())
 		return -1, false

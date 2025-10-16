@@ -30,38 +30,64 @@ var _ = Describe("token", func() {
 
 	Context("ValidateToken", func() {
 		It("returns user info if the token is valid", func() {
+			s := token.NewService("secret value", "refresh value")
+
+			userID := int64(10)
+			tokenDetails, err := s.CreateToken(userID)
+			Expect(err).ToNot(HaveOccurred())
+
 			req, err := http.NewRequest(http.MethodPost, "example.com", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			// token from previous run of token.CreateToken(0)
-			req.Header.Set(
-				"Authorization",
-				"bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEwLCJBY2Nlc3NVVUlEIjoiNzc5ZjRlYzktYTA0My00ZjU1LWI2MDQtZGNlYmE3NmQwZTIyIiwiUmVmcmVzaFVVSUQiOiIiLCJleHAiOjE1OTQ3NDA3Mzh9.QzKb9sF-XRYD9gs8slrT7mlGObubQIsFkazgxv14b6U",
-			)
+			req.Header.Set("Authorization", "bearer "+tokenDetails.AccessToken)
 
-			s := token.NewService("secret value", "refresh value")
 			accessDetails, err := s.ValidateToken(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(accessDetails).To(Equal(&token.AccessDetails{
-				AccessUuid: "779f4ec9-a043-4f55-b604-dceba76d0e22",
-				UserId:     10,
+				AccessUuid: tokenDetails.AccessUuid,
+				UserId:     userID,
 			}))
 		})
 
 		It("returns false if the token is invalid", func() {
+			// Create a token with one secret
+			s1 := token.NewService("secret value", "refresh value")
+			tokenDetails, err := s1.CreateToken(0)
+			Expect(err).ToNot(HaveOccurred())
+
 			req, err := http.NewRequest(http.MethodPost, "example.com", nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			// token from previous run of token.CreateToken(0)
-			req.Header.Set(
-				"Authorization",
-				"bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjowLCJleHAiOjE1OTQ2MTY0MzAsImlhdCI6MTU5NDYxMjgzMH0.9Bhbk7G25LG-fU9w_HOxDUw3u16cG0QULwIIUENXdJ4",
-			)
+			req.Header.Set("Authorization", "bearer "+tokenDetails.AccessToken)
 
-			s := token.NewService("wrong value", "refresh value")
-			accessDetails, err := s.ValidateToken(req)
+			// Try to validate with a different secret
+			s2 := token.NewService("wrong value", "refresh value")
+			accessDetails, err := s2.ValidateToken(req)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("signature is invalid"))
+			Expect(accessDetails).To(BeNil())
+		})
+
+		It("returns error if the token is malformed", func() {
+			req, err := http.NewRequest(http.MethodPost, "example.com", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			req.Header.Set("Authorization", "bearer invalid.token.here")
+
+			s := token.NewService("secret value", "refresh value")
+			accessDetails, err := s.ValidateToken(req)
+			Expect(err).To(HaveOccurred())
+			Expect(accessDetails).To(BeNil())
+		})
+
+		It("returns error if authorization header is missing", func() {
+			req, err := http.NewRequest(http.MethodPost, "example.com", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			s := token.NewService("secret value", "refresh value")
+			accessDetails, err := s.ValidateToken(req)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("authorization header missing token"))
 			Expect(accessDetails).To(BeNil())
 		})
 	})
