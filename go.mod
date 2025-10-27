@@ -3,7 +3,7 @@ module github.com/iplay88keys/my-recipe-library
 go 1.25
 
 require (
-	cloud.google.com/go/cloudsqlconn v1.18.1
+	cloud.google.com/go/cloudsqlconn v1.19.0
 	code.cloudfoundry.org/go-envstruct v1.7.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/alicebob/miniredis v2.5.0+incompatible
@@ -59,10 +59,10 @@ require (
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	google.golang.org/api v0.252.0 // indirect
+	google.golang.org/api v0.253.0 // indirect
 	google.golang.org/genproto v0.0.0-20251014184007-4626949a642f // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251007200510-49b9836ed3ff // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
